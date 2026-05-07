@@ -1,5 +1,5 @@
 import { h, render } from "https://esm.sh/preact@10.19.3";
-import { useReducer, useEffect, useCallback, useRef } from "https://esm.sh/preact@10.19.3/hooks";
+import { useReducer, useEffect, useCallback, useRef, useState } from "https://esm.sh/preact@10.19.3/hooks";
 
 import { initialState, reducer } from "./store.js";
 import { api } from "./api.js";
@@ -10,6 +10,7 @@ import { Canvas }       from "./components/Canvas.js";
 import { Toolbar }      from "./components/Toolbar.js";
 import { PageTabs }     from "./components/PageTabs.js";
 import { StickyNote }   from "./components/StickyNote.js";
+import { exportCurrentPageAsPng, exportAllPagesAsPdf } from "./export-utils.js";
 
 // ── App ───────────────────────────────────────────────────────────────────────
 
@@ -170,6 +171,25 @@ function App() {
     try { await api.deleteStickyNote(id); } catch (e) { console.error(e); }
   }
 
+  // ── Export ───────────────────────────────────────────────────────────────
+
+  function handleExportPng() {
+    const page = state.pages[state.currentPageIndex];
+    if (!page) return;
+    const name = `${state.notebook?.title ?? "note"}-第${state.currentPageIndex + 1}頁`;
+    exportCurrentPageAsPng(page, name);
+  }
+
+  async function handleExportPdf() {
+    if (!state.pages.length) return;
+    try {
+      await exportAllPagesAsPdf(state.pages, state.notebook?.title ?? "note");
+    } catch (e) {
+      console.error("export pdf:", e);
+      alert("PDF 匯出失敗，請確認網路連線後再試。");
+    }
+  }
+
   // ── Back to list ──────────────────────────────────────────────────────────
 
   async function handleBack() {
@@ -199,6 +219,7 @@ function App() {
     h("div", { class: "top-bar" },
       h("button", { class: "btn-back", onClick: handleBack }, "← 返回"),
       h("div", { class: "notebook-title" }, state.notebook?.title ?? ""),
+      h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf }),
       h("div", { class: "save-indicator" },
         state.isDirty
           ? h("span", { class: "saving" }, "未儲存")
@@ -241,6 +262,50 @@ function App() {
       onAddPage:    handleAddPage,
       onDeletePage: handleDeletePage,
     })
+  );
+}
+
+// ── Export dropdown menu ──────────────────────────────────────────────────────
+
+function ExportMenu({ onExportPng, onExportPdf }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handlePdf() {
+    setOpen(false);
+    setLoading(true);
+    try { await onExportPdf(); } finally { setLoading(false); }
+  }
+
+  return h("div", { class: "export-menu-wrap" },
+    h("button", {
+      class: "btn-export",
+      onClick: () => setOpen(!open),
+      disabled: loading,
+    }, loading ? "匯出中…" : "匯出 ▾"),
+    open && h("div", { class: "export-dropdown" },
+      h("button", {
+        class: "export-item",
+        onClick: () => { setOpen(false); onExportPng(); },
+      },
+        h("span", { class: "export-icon" }, "🖼"),
+        h("div", null,
+          h("div", { class: "export-label" }, "匯出為圖片 (PNG)"),
+          h("div", { class: "export-hint" }, "目前頁面")
+        )
+      ),
+      h("button", {
+        class: "export-item",
+        onClick: handlePdf,
+      },
+        h("span", { class: "export-icon" }, "📄"),
+        h("div", null,
+          h("div", { class: "export-label" }, "匯出為 PDF"),
+          h("div", { class: "export-hint" }, "所有頁面")
+        )
+      )
+    ),
+    open && h("div", { class: "export-backdrop", onClick: () => setOpen(false) })
   );
 }
 

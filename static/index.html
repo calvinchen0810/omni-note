@@ -100,6 +100,34 @@
     .save-indicator .saving { color: #f59e0b; }
     .save-indicator .saved  { color: #10b981; }
 
+    /* ── Export menu ──────────────────────────────────────────────────────── */
+    .export-menu-wrap { position: relative; }
+    .btn-export {
+      background: #f3f4f6; color: #374151; border-radius: 8px;
+      padding: 7px 14px; font-size: 13px; font-weight: 600;
+      transition: background .15s; white-space: nowrap;
+    }
+    .btn-export:hover:not(:disabled) { background: #e5e7eb; }
+    .btn-export:disabled { opacity: .6; cursor: not-allowed; }
+    .export-backdrop {
+      position: fixed; inset: 0; z-index: 149;
+    }
+    .export-dropdown {
+      position: absolute; right: 0; top: calc(100% + 6px);
+      background: #fff; border-radius: 12px; padding: 6px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.14); z-index: 150;
+      min-width: 220px;
+    }
+    .export-item {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; text-align: left; padding: 10px 12px;
+      border-radius: 8px; transition: background .12s;
+    }
+    .export-item:hover { background: #f3f4f6; }
+    .export-icon { font-size: 22px; flex-shrink: 0; }
+    .export-label { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+    .export-hint  { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
     .editor-main {
       flex: 1; display: flex; overflow: hidden;
     }
