@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#4f8ef7" />
+  <title>OmniNote</title>
+  <link rel="manifest" href="/manifest.json" />
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont,
+      "Segoe UI", "PingFang TC", "Hiragino Sans", sans-serif; }
+    button { cursor: pointer; border: none; background: none; font: inherit; }
+    input, textarea { font: inherit; }
+
+    /* ── App Shell ────────────────────────────────────────────────────────── */
+    #app { height: 100%; }
+    .app { height: 100%; display: flex; flex-direction: column; background: #f5f5f7; }
+
+    /* ── Notebook List ────────────────────────────────────────────────────── */
+    .notebook-list {
+      flex: 1; overflow-y: auto; padding: 24px;
+      max-width: 960px; margin: 0 auto; width: 100%;
+    }
+    .list-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .app-title { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+    .btn-primary {
+      background: #4f8ef7; color: #fff; border-radius: 10px;
+      padding: 9px 18px; font-size: 14px; font-weight: 600;
+      transition: background .15s;
+    }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-secondary {
+      background: #e5e7eb; color: #374151; border-radius: 10px;
+      padding: 9px 18px; font-size: 14px; font-weight: 600;
+    }
+    .create-form {
+      background: #fff; border-radius: 14px; padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 20px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .input-field {
+      border: 1.5px solid #d1d5db; border-radius: 8px;
+      padding: 10px 14px; font-size: 15px; outline: none; width: 100%;
+      transition: border-color .15s;
+    }
+    .input-field:focus { border-color: #4f8ef7; }
+    .form-actions { display: flex; gap: 10px; }
+    .empty-state {
+      text-align: center; padding: 80px 20px; color: #9ca3af;
+    }
+    .empty-icon { font-size: 64px; margin-bottom: 16px; }
+    .notebooks-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;
+    }
+    .notebook-card {
+      background: #fff; border-radius: 14px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .notebook-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+    .card-body { padding: 18px 18px 8px; cursor: pointer; }
+    .card-title { font-size: 16px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; }
+    .card-meta { display: flex; gap: 6px; font-size: 12px; color: #9ca3af; }
+    .card-actions {
+      display: flex; justify-content: flex-end; gap: 4px;
+      padding: 8px 12px 12px; border-top: 1px solid #f3f4f6;
+    }
+    .icon-btn {
+      padding: 6px 10px; border-radius: 8px; font-size: 14px;
+      background: #f3f4f6; transition: background .15s;
+    }
+    .icon-btn:hover { background: #e5e7eb; }
+    .icon-btn.danger:hover { background: #fee2e2; }
+
+    /* ── Editor Layout ────────────────────────────────────────────────────── */
+    .app.editor { display: flex; flex-direction: column; }
+    .top-bar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 16px; height: 52px; background: #fff;
+      border-bottom: 1px solid #e5e7eb; flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .btn-back {
+      color: #4f8ef7; font-size: 14px; font-weight: 600;
+      padding: 6px 10px; border-radius: 8px; transition: background .15s;
+    }
+    .btn-back:hover { background: #eff6ff; }
+    .notebook-title {
+      flex: 1; font-size: 16px; font-weight: 600;
+      color: #1a1a2e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .save-indicator { font-size: 12px; }
+    .save-indicator .saving { color: #f59e0b; }
+    .save-indicator .saved  { color: #10b981; }
+
+    .editor-main {
+      flex: 1; display: flex; overflow: hidden;
+    }
+
+    /* ── Canvas wrapper (positioned) ──────────────────────────────────────── */
+    .canvas-wrapper {
+      flex: 1; position: relative; overflow: hidden;
+      background: #e8eaed;
+    }
+
+    /* ── Toolbar ──────────────────────────────────────────────────────────── */
+    .toolbar {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 4px; padding: 10px 6px;
+      background: #fff; border-right: 1px solid #e5e7eb;
+      width: 58px; flex-shrink: 0; overflow-y: auto;
+      box-shadow: 1px 0 4px rgba(0,0,0,.04);
+    }
+    .tool-btn {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #374151; transition: background .12s, color .12s;
+    }
+    .tool-btn:hover  { background: #f3f4f6; }
+    .tool-btn.active { background: #eff6ff; color: #4f8ef7; }
+    .tool-btn.danger:hover { background: #fee2e2; color: #dc2626; }
+    .tool-divider { width: 30px; height: 1px; background: #e5e7eb; margin: 2px 0; }
+
+    .color-swatch-btn {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 2.5px solid #fff;
+      box-shadow: 0 0 0 1.5px #d1d5db; cursor: pointer;
+      transition: transform .1s;
+    }
+    .color-swatch-btn:hover { transform: scale(1.15); }
+    .color-palette {
+      position: absolute; left: 54px; top: 0;
+      background: #fff; border-radius: 12px;
+      padding: 10px; display: flex; flex-direction: column; gap: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15); z-index: 100;
+    }
+    .color-dot {
+      width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid transparent;
+      cursor: pointer; transition: transform .1s, border-color .1s;
+    }
+    .color-dot:hover { transform: scale(1.2); }
+    .color-dot.selected { border-color: #1a1a2e; }
+
+    .eraser-mode-toggle {
+      font-size: 9px; font-weight: 700; border-radius: 4px;
+      padding: 1px 3px; margin-left: -4px; margin-top: -2px;
+      align-self: flex-end;
+    }
+    .mode-badge.precise { background: #dbeafe; color: #1d4ed8; }
+    .mode-badge.stroke  { background: #fce7f3; color: #be185d; }
+
+    .width-control {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 4px 0;
+    }
+    .width-label { font-size: 9px; color: #9ca3af; }
+    .width-control input[type=range] {
+      width: 40px; appearance: none;
+      writing-mode: vertical-lr; direction: rtl;
+      height: 70px;
+    }
+
+    /* ── Page tabs ────────────────────────────────────────────────────────── */
+    .page-tabs {
+      display: flex; align-items: center; gap: 2px;
+      padding: 0 12px; height: 44px; background: #fff;
+      border-top: 1px solid #e5e7eb; overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .page-tab {
+      display: flex; align-items: center; gap: 4px;
+      padding: 6px 14px; border-radius: 8px 8px 0 0;
+      font-size: 13px; font-weight: 500; color: #6b7280;
+      cursor: pointer; white-space: nowrap;
+      border: 1px solid transparent; border-bottom: none;
+      transition: background .12s, color .12s;
+    }
+    .page-tab:hover  { background: #f3f4f6; color: #374151; }
+    .page-tab.active { background: #eff6ff; color: #4f8ef7;
+                       border-color: #dbeafe; }
+    .page-tab.add-tab { color: #9ca3af; font-size: 18px; padding: 2px 10px; }
+    .page-tab.add-tab:hover { color: #4f8ef7; background: #eff6ff; }
+    .tab-delete {
+      font-size: 14px; color: #9ca3af; padding: 0 2px;
+      border-radius: 4px;
+    }
+    .tab-delete:hover { color: #dc2626; background: #fee2e2; }
+
+    /* ── Sticky notes ─────────────────────────────────────────────────────── */
+    .sticky-note {
+      position: absolute; border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12), 0 1px 4px rgba(0,0,0,.08);
+      display: flex; flex-direction: column;
+      overflow: visible; z-index: 50;
+      min-width: 120px; min-height: 80px;
+    }
+    .sticky-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 6px; cursor: grab; border-radius: 4px 4px 0 0;
+      user-select: none;
+    }
+    .sticky-header:active { cursor: grabbing; }
+    .sticky-dots { font-size: 14px; color: rgba(0,0,0,.4); }
+    .sticky-menu-btn {
+      font-size: 16px; color: rgba(0,0,0,.5); padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .sticky-menu-btn:hover { background: rgba(0,0,0,.1); }
+    .sticky-menu {
+      position: absolute; right: 0; top: 28px;
+      background: #fff; border-radius: 10px; padding: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15); z-index: 200; min-width: 140px;
+    }
+    .sticky-menu-label { font-size: 11px; color: #9ca3af; margin-bottom: 8px; }
+    .sticky-colors { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .sticky-delete-btn {
+      width: 100%; text-align: left; font-size: 13px; color: #dc2626;
+      padding: 6px 8px; border-radius: 6px; transition: background .12s;
+    }
+    .sticky-delete-btn:hover { background: #fee2e2; }
+
+    .sticky-body { flex: 1; padding: 8px 10px; overflow: hidden; }
+    .sticky-textarea {
+      width: 100%; height: 100%; border: none; outline: none;
+      background: transparent; resize: none; font-size: 14px;
+      line-height: 1.5; color: #1a1a2e;
+    }
+    .sticky-text { font-size: 14px; line-height: 1.5; color: #1a1a2e; height: 100%; }
+    .sticky-placeholder { color: #bbb; font-style: italic; }
+
+    .sticky-resize {
+      position: absolute; bottom: 2px; right: 4px;
+      font-size: 14px; color: rgba(0,0,0,.3); cursor: se-resize;
+      user-select: none; line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module" src="/js/app.js"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(console.warn);
+      });
+    }
+  </script>
+</body>
+</html>
