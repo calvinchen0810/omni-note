@@ -1,4 +1,4 @@
-const CACHE = "omni-note-v1";
+const CACHE = "omni-note-v2";
 
 const PRECACHE = [
   "/",
@@ -6,6 +6,7 @@ const PRECACHE = [
   "/js/store.js",
   "/js/api.js",
   "/js/canvas-utils.js",
+  "/js/export-utils.js",
   "/js/components/Canvas.js",
   "/js/components/Toolbar.js",
   "/js/components/PageTabs.js",
