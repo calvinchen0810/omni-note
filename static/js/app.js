@@ -223,12 +223,14 @@ function App() {
         h(Canvas, { state, dispatch, onSave: scheduleSave }),
 
         // Sticky notes as DOM overlay
+        // Only interactive when tool is "select" or "sticky"; otherwise pass through to canvas
         currentPage && (currentPage.sticky_notes ?? []).map((note) =>
           h(StickyNote, {
-            key:      note.id,
+            key:         note.id,
             note,
-            onUpdate: (patch) => handleUpdateStickyNote(note.id, patch),
-            onDelete: () => handleDeleteStickyNote(note.id),
+            interactive: ["select", "sticky"].includes(state.currentTool),
+            onUpdate:    (patch) => handleUpdateStickyNote(note.id, patch),
+            onDelete:    () => handleDeleteStickyNote(note.id),
           })
         )
       )

@@ -3,7 +3,7 @@ import { useState, useRef, useCallback } from "https://esm.sh/preact@10.19.3/hoo
 
 const COLORS = ["#ffd60a", "#f783ac", "#74c0fc", "#a9e34b", "#ffa94d", "#e8e8e8"];
 
-export function StickyNote({ note, onUpdate, onDelete }) {
+export function StickyNote({ note, onUpdate, onDelete, interactive = true }) {
   const [editing, setEditing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const dragRef = useRef(null);
@@ -58,12 +58,14 @@ export function StickyNote({ note, onUpdate, onDelete }) {
     ref: noteRef,
     class: "sticky-note",
     style: {
-      left:    note.x + "px",
-      top:     note.y + "px",
-      width:   note.width + "px",
-      height:  note.height + "px",
-      background: bgLight,
-      borderTop: `4px solid ${note.color}`,
+      left:          note.x + "px",
+      top:           note.y + "px",
+      width:         note.width + "px",
+      height:        note.height + "px",
+      background:    bgLight,
+      borderTop:     `4px solid ${note.color}`,
+      pointerEvents: interactive ? "auto" : "none",
+      opacity:       interactive ? 1 : 0.6,
     },
   },
     // Header / drag handle
