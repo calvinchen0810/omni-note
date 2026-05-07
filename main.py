@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from contextlib import asynccontextmanager
 
 from database import init_db
@@ -23,6 +23,13 @@ app.include_router(notebooks.router, prefix="/api")
 app.include_router(pages.router, prefix="/api")
 app.include_router(sticky_notes.router, prefix="/api")
 
+@app.get("/health")
+def health():
+    return Response(content="OK", status_code=200)
+
+@app.head("/health")
+def health_check_head():
+    return Response(status_code=200)
 
 @app.get("/sw.js")
 async def service_worker():
