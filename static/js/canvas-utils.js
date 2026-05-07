@@ -11,12 +11,31 @@ export function renderStroke(ctx, stroke) {
   ctx.fillStyle = stroke.color;
 
   if (stroke.tool === "highlighter") {
+    // Draw as one single path so multiply does not compound at overlapping segments.
     ctx.globalAlpha = 0.35;
     ctx.globalCompositeOperation = "multiply";
-  } else {
-    ctx.globalAlpha = 1.0;
-    ctx.globalCompositeOperation = "source-over";
+    ctx.lineWidth = stroke.width; // fixed width — no pressure variation
+
+    if (pts.length === 1) {
+      const [x, y] = pts[0];
+      ctx.beginPath();
+      ctx.arc(x, y, stroke.width / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i][0], pts[i][1]);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    return;
   }
+
+  // ── Pen: pressure-sensitive bezier ───────────────────────────────────────
+  ctx.globalAlpha = 1.0;
+  ctx.globalCompositeOperation = "source-over";
 
   if (pts.length === 1) {
     const [x, y, p = 0.5] = pts[0];
@@ -32,7 +51,6 @@ export function renderStroke(ctx, stroke) {
     ctx.lineTo(x1, y1);
     ctx.stroke();
   } else {
-    // Smooth quadratic bezier with pressure-varied width per segment
     for (let i = 0; i < pts.length - 1; i++) {
       const [x0, y0, p0 = 0.5] = pts[i];
       const [x1, y1, p1 = 0.5] = pts[i + 1];
@@ -52,7 +70,6 @@ export function renderStroke(ctx, stroke) {
       }
       ctx.stroke();
     }
-    // Last half-segment to final point
     const n = pts.length;
     const [xn2, yn2] = pts[n - 2];
     const [xn1, yn1, pn = 0.5] = pts[n - 1];
@@ -187,6 +204,16 @@ export function drawEraserCursor(ctx, x, y, radius) {
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.restore();
+}
+
+export function drawPenCursor(ctx, x, y, radius, color) {
+  ctx.save();
+  ctx.globalAlpha = 0.7;
+  ctx.fillStyle = color || "#1a1a2e";
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(1, radius), 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 

@@ -3,7 +3,6 @@ import { useState } from "https://esm.sh/preact@10.19.3/hooks";
 
 const PEN_COLORS   = ["#1a1a2e", "#e63946", "#2196f3", "#4caf50", "#9c27b0", "#ff9800"];
 const HL_COLORS    = ["#ffd60a", "#7bf7a0", "#74c0fc", "#f783ac", "#a9e34b", "#ffa94d"];
-const STICKY_COLORS = ["#ffd60a", "#f783ac", "#74c0fc", "#a9e34b", "#ffa94d", "#e8e8e8"];
 
 function ToolBtn({ active, title, onClick, children, danger }) {
   return h("button", {
@@ -20,6 +19,7 @@ function Divider() {
 export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
   const [showEraserMenu, setShowEraserMenu] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorPalettePos, setColorPalettePos] = useState(null);
 
   const tool = state.currentTool;
   const canUndo = state.undoStack.length > 0;
@@ -29,6 +29,27 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
     dispatch({ type: "SET_TOOL", tool: t });
     setShowEraserMenu(false);
     setShowColorPicker(false);
+    setColorPalettePos(null);
+  }
+
+  function toggleColorPicker(e) {
+    if (showColorPicker) {
+      setShowColorPicker(false);
+      setColorPalettePos(null);
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const canvasRect = document.querySelector(".canvas-wrapper")?.getBoundingClientRect();
+    const paletteHeight = 190;
+    const top = Math.min(
+      window.innerHeight - paletteHeight,
+      Math.max(8, rect.top - 8)
+    );
+    const left = Math.max(rect.right + 12, (canvasRect?.left ?? rect.right) + 8);
+
+    setColorPalettePos({ left, top });
+    setShowColorPicker(true);
   }
 
   const activeColor = tool === "pen"
@@ -36,6 +57,13 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
     : tool === "highlighter"
       ? state.highlighterColor
       : null;
+
+  // Size of the color swatch reflects current brush width (8–28px)
+  const swatchSize = (() => {
+    if (tool === "pen")         return Math.round(8  + (state.penWidth         - 1)  / 11 * 20);
+    if (tool === "highlighter") return Math.round(12 + (state.highlighterWidth - 8)  / 32 * 16);
+    return 26;
+  })();
 
   return h("div", { class: "toolbar" },
 
@@ -56,14 +84,22 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
     ),
 
     // ── Color Swatch ──────────────────────────────────────────────────────────
-    activeColor && h("div", { style: { position: "relative" } },
+    activeColor && h("div", null,
       h("button", {
         class: "color-swatch-btn",
         title: "顏色",
-        style: { background: activeColor },
-        onClick: () => setShowColorPicker(!showColorPicker),
-      }),
-      showColorPicker && h("div", { class: "color-palette" },
+        style: { "--swatch-dot-size": `${swatchSize}px` },
+        onClick: (e) => toggleColorPicker(e),
+      },
+        h("span", {
+          class: "color-swatch-dot",
+          style: { background: activeColor },
+        })
+      ),
+      showColorPicker && colorPalettePos && h("div", {
+        class: "color-palette color-palette-overlay",
+        style: { left: `${colorPalettePos.left}px`, top: `${colorPalettePos.top}px` },
+      },
         (tool === "pen" ? PEN_COLORS : HL_COLORS).map((c) =>
           h("button", {
             key: c,
@@ -72,6 +108,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
             onClick: () => {
               dispatch({ type: tool === "pen" ? "SET_PEN_COLOR" : "SET_HL_COLOR", color: c });
               setShowColorPicker(false);
+              setColorPalettePos(null);
             },
           })
         )
@@ -163,26 +200,35 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
 
     tool === "pen" && h("div", { class: "width-control" },
       h("span", { class: "width-label" }, "粗細"),
-      h("input", {
-        type: "range", min: 1, max: 12, value: state.penWidth,
-        onInput: (e) => dispatch({ type: "SET_PEN_WIDTH", width: +e.target.value }),
-      })
+      h("div", { class: "width-slider-wrap" },
+        h("div", { class: "width-triangle" }),
+        h("input", {
+          type: "range", min: 1, max: 12, value: state.penWidth,
+          onInput: (e) => dispatch({ type: "SET_PEN_WIDTH", width: +e.target.value }),
+        })
+      )
     ),
 
     tool === "highlighter" && h("div", { class: "width-control" },
       h("span", { class: "width-label" }, "粗細"),
-      h("input", {
-        type: "range", min: 8, max: 40, value: state.highlighterWidth,
-        onInput: (e) => dispatch({ type: "SET_HL_WIDTH", width: +e.target.value }),
-      })
+      h("div", { class: "width-slider-wrap" },
+        h("div", { class: "width-triangle" }),
+        h("input", {
+          type: "range", min: 8, max: 40, value: state.highlighterWidth,
+          onInput: (e) => dispatch({ type: "SET_HL_WIDTH", width: +e.target.value }),
+        })
+      )
     ),
 
     tool === "eraser" && h("div", { class: "width-control" },
       h("span", { class: "width-label" }, "大小"),
-      h("input", {
-        type: "range", min: 10, max: 80, value: state.eraserWidth,
-        onInput: (e) => dispatch({ type: "SET_ERASER_WIDTH", width: +e.target.value }),
-      })
+      h("div", { class: "width-slider-wrap" },
+        h("div", { class: "width-triangle" }),
+        h("input", {
+          type: "range", min: 10, max: 80, value: state.eraserWidth,
+          onInput: (e) => dispatch({ type: "SET_ERASER_WIDTH", width: +e.target.value }),
+        })
+      )
     ),
   );
 }

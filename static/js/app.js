@@ -12,11 +12,17 @@ import { PageTabs }     from "./components/PageTabs.js";
 import { StickyNote }   from "./components/StickyNote.js";
 import { exportCurrentPageAsPng, exportAllPagesAsPdf } from "./export-utils.js";
 
+const PAGE_WIDTH = 1200;
+const PAGE_HEIGHT = 1700;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.0;
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [notebooks, setNotebooks]   = useReducer((s, a) => a, []);
+  const [zoom, setZoom] = useState(1);
   const saveTimerRef = useRef(null);
 
   // ── Load notebooks on mount ───────────────────────────────────────────────
@@ -150,7 +156,7 @@ function App() {
         width: 220,
         height: 160,
         content: "",
-        color: "#ffd60a",
+        color: "#fff6bf",
       });
       dispatch({ type: "ADD_STICKY_NOTE", note });
     } catch (e) {
@@ -198,6 +204,10 @@ function App() {
     await loadNotebooks();
   }
 
+  function updateZoom(next) {
+    setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next)));
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (state.view === "list") {
@@ -220,6 +230,23 @@ function App() {
       h("button", { class: "btn-back", onClick: handleBack }, "← 返回"),
       h("div", { class: "notebook-title" }, state.notebook?.title ?? ""),
       h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf }),
+      h("div", { class: "zoom-controls" },
+        h("button", {
+          class: "zoom-btn",
+          title: "縮小",
+          onClick: () => updateZoom(zoom - 0.1),
+        }, "−"),
+        h("button", {
+          class: "zoom-value",
+          title: "重設 100%",
+          onClick: () => setZoom(1),
+        }, `${Math.round(zoom * 100)}%`),
+        h("button", {
+          class: "zoom-btn",
+          title: "放大",
+          onClick: () => updateZoom(zoom + 0.1),
+        }, "+")
+      ),
       h("div", { class: "save-indicator" },
         state.isDirty
           ? h("span", { class: "saving" }, "未儲存")
@@ -241,18 +268,50 @@ function App() {
 
       // Canvas + sticky notes layer
       h("div", { class: "canvas-wrapper" },
-        h(Canvas, { state, dispatch, onSave: scheduleSave }),
+        h("div", { class: "page-stage" },
+          h("div", {
+            class: "page-zoom-layer",
+            style: {
+              width: `${Math.round(PAGE_WIDTH * zoom)}px`,
+              height: `${Math.round(PAGE_HEIGHT * zoom)}px`,
+            },
+          },
+            h("div", {
+              class: "page-content",
+              style: {
+                width: `${PAGE_WIDTH}px`,
+                height: `${PAGE_HEIGHT}px`,
+                transform: `scale(${zoom})`,
+              },
+            },
+              h(Canvas, {
+                state,
+                dispatch,
+                onSave: scheduleSave,
+                pageWidth: PAGE_WIDTH,
+                pageHeight: PAGE_HEIGHT,
+              }),
 
-        // Sticky notes as DOM overlay
-        // Only interactive when tool is "select" or "sticky"; otherwise pass through to canvas
-        currentPage && (currentPage.sticky_notes ?? []).map((note) =>
-          h(StickyNote, {
-            key:         note.id,
-            note,
-            interactive: ["select", "sticky"].includes(state.currentTool),
-            onUpdate:    (patch) => handleUpdateStickyNote(note.id, patch),
-            onDelete:    () => handleDeleteStickyNote(note.id),
-          })
+              // Sticky notes as DOM overlay
+              currentPage && (currentPage.sticky_notes ?? []).map((note) =>
+                h(StickyNote, {
+                  key: note.id,
+                  note,
+                  interactive: true,
+                  zoom,
+                  tool: state.currentTool,
+                  penColor: state.penColor,
+                  penWidth: state.penWidth,
+                  highlighterColor: state.highlighterColor,
+                  highlighterWidth: state.highlighterWidth,
+                  eraserWidth: state.eraserWidth,
+                  eraserMode: state.eraserMode,
+                  onUpdate: (patch) => handleUpdateStickyNote(note.id, patch),
+                  onDelete: () => handleDeleteStickyNote(note.id),
+                })
+              )
+            )
+          )
         )
       )
     ),

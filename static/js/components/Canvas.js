@@ -9,11 +9,12 @@ import {
   translateStrokes,
   drawLasso,
   drawEraserCursor,
+  drawPenCursor,
   drawPageBackground,
   uid,
 } from "../canvas-utils.js";
 
-export function Canvas({ state, dispatch, onSave }) {
+export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
   const baseRef    = useRef(null);
   const overlayRef = useRef(null);
   const containerRef = useRef(null);
@@ -37,7 +38,8 @@ export function Canvas({ state, dispatch, onSave }) {
   function resizeCanvases() {
     const c = containerRef.current;
     if (!c) return;
-    const { width, height } = c.getBoundingClientRect();
+    const width = c.clientWidth;
+    const height = c.clientHeight;
     for (const ref of [baseRef, overlayRef]) {
       if (ref.current && (ref.current.width !== width || ref.current.height !== height)) {
         ref.current.width  = width;
@@ -84,10 +86,13 @@ export function Canvas({ state, dispatch, onSave }) {
   // ── Pointer position helper ───────────────────────────────────────────────
 
   function pos(e) {
-    const rect = overlayRef.current.getBoundingClientRect();
+    const canvas = overlayRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const sx = rect.width > 0 ? canvas.width / rect.width : 1;
+    const sy = rect.height > 0 ? canvas.height / rect.height : 1;
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * sx,
+      y: (e.clientY - rect.top) * sy,
       pressure: e.pressure > 0 ? e.pressure : 0.5,
     };
   }
@@ -99,13 +104,28 @@ export function Canvas({ state, dispatch, onSave }) {
     sess.current.currentPts = [[p.x, p.y, p.pressure]];
   }
 
+  function drawPenHoverCursor(p) {
+    const hl = state.currentTool === "highlighter";
+    const radius = hl ? state.highlighterWidth / 2 : state.penWidth / 2;
+    const color  = hl ? state.highlighterColor : state.penColor;
+    const octx = overlayRef.current.getContext("2d");
+    octx.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
+    drawPenCursor(octx, p.x, p.y, radius, color);
+  }
+
   function penMove(p) {
-    if (!sess.current.drawing) return;
+    if (!sess.current.drawing) {
+      drawPenHoverCursor(p);
+      return;
+    }
     sess.current.currentPts.push([p.x, p.y, p.pressure]);
 
     const ctx = overlayRef.current.getContext("2d");
     ctx.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
     renderStroke(ctx, makeStroke(state, sess.current.currentPts));
+    // redraw cursor on top of live stroke
+    const hl = state.currentTool === "highlighter";
+    drawPenCursor(ctx, p.x, p.y, hl ? state.highlighterWidth / 2 : state.penWidth / 2, hl ? state.highlighterColor : state.penColor);
   }
 
   function penUp() {
@@ -115,6 +135,13 @@ export function Canvas({ state, dispatch, onSave }) {
     if (!pts.length) return;
 
     const stroke = makeStroke(state, pts);
+
+    // Paint the completed stroke directly on the base canvas BEFORE clearing
+    // the overlay. This prevents the one-frame flash that would otherwise
+    // appear between the overlay clear and the Preact re-render redraw.
+    const bctx = baseRef.current?.getContext("2d");
+    if (bctx) renderStroke(bctx, stroke);
+
     overlayRef.current.getContext("2d")
       .clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
 
@@ -253,12 +280,18 @@ export function Canvas({ state, dispatch, onSave }) {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const cursor = { pen: "crosshair", highlighter: "crosshair", eraser: "none",
+  const cursor = { pen: "none", highlighter: "none", eraser: "none",
                    select: "default", sticky: "cell" }[state.currentTool] ?? "crosshair";
 
   return h("div", {
     ref: containerRef,
-    style: { position: "relative", flex: 1, overflow: "hidden" },
+    style: {
+      position: "absolute",
+      inset: 0,
+      overflow: "hidden",
+      width: `${pageWidth}px`,
+      height: `${pageHeight}px`,
+    },
   },
     h("canvas", { ref: baseRef, style: { position: "absolute", inset: 0 } }),
     h("canvas", {
@@ -268,7 +301,13 @@ export function Canvas({ state, dispatch, onSave }) {
       onPointerMove,
       onPointerUp,
       onPointerCancel: onPointerUp,
-      onPointerLeave: () => { if (state.currentTool === "eraser") eraserLeave(); },
+      onPointerLeave: () => {
+        if (state.currentTool === "eraser") eraserLeave();
+        else if (state.currentTool === "pen" || state.currentTool === "highlighter") {
+          overlayRef.current?.getContext("2d")
+            ?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
+        }
+      },
     })
   );
 }

@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#4f8ef7" />
   <title>OmniNote</title>
-  <link rel="manifest" href="/manifest.json" />
+  <link rel="manifest" href="manifest.json" />
   <style>
     /* ── Reset & Base ──────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -96,6 +96,25 @@
       flex: 1; font-size: 16px; font-weight: 600;
       color: #1a1a2e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    .zoom-controls {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px; border-radius: 10px;
+      background: #f3f4f6;
+    }
+    .zoom-btn, .zoom-value {
+      min-width: 30px; height: 28px;
+      border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; color: #374151;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+    }
+    .zoom-btn:hover, .zoom-value:hover {
+      background: #eff6ff; color: #1d4ed8;
+    }
+    .zoom-value {
+      min-width: 58px; font-weight: 600;
+    }
     .save-indicator { font-size: 12px; }
     .save-indicator .saving { color: #f59e0b; }
     .save-indicator .saved  { color: #10b981; }
@@ -134,8 +153,25 @@
 
     /* ── Canvas wrapper (positioned) ──────────────────────────────────────── */
     .canvas-wrapper {
-      flex: 1; position: relative; overflow: hidden;
+      flex: 1; position: relative; overflow: auto;
       background: #e8eaed;
+    }
+    .page-stage {
+      min-width: 100%; min-height: 100%;
+      display: flex; justify-content: center;
+      align-items: flex-start;
+      padding: 28px;
+    }
+    .page-zoom-layer {
+      position: relative;
+      flex: 0 0 auto;
+    }
+    .page-content {
+      position: relative;
+      transform-origin: top left;
+      background: #fff;
+      border: 1px solid #d9dde5;
+      box-shadow: 0 12px 36px rgba(16, 24, 40, .18), 0 2px 8px rgba(16, 24, 40, .08);
     }
 
     /* ── Toolbar ──────────────────────────────────────────────────────────── */
@@ -143,7 +179,7 @@
       display: flex; flex-direction: column; align-items: center;
       gap: 4px; padding: 10px 6px;
       background: #fff; border-right: 1px solid #e5e7eb;
-      width: 58px; flex-shrink: 0; overflow-y: auto;
+      width: 66px; flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
       box-shadow: 1px 0 4px rgba(0,0,0,.04);
     }
     .tool-btn {
@@ -157,17 +193,29 @@
     .tool-divider { width: 30px; height: 1px; background: #e5e7eb; margin: 2px 0; }
 
     .color-swatch-btn {
-      width: 26px; height: 26px; border-radius: 50%;
+      --swatch-dot-size: 18px;
+      width: 30px; height: 30px; border-radius: 50%;
       border: 2.5px solid #fff;
       box-shadow: 0 0 0 1.5px #d1d5db; cursor: pointer;
       transition: transform .1s;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff;
+    }
+    .color-swatch-dot {
+      width: var(--swatch-dot-size);
+      height: var(--swatch-dot-size);
+      border-radius: 50%;
+      transition: width .15s, height .15s;
     }
     .color-swatch-btn:hover { transform: scale(1.15); }
     .color-palette {
-      position: absolute; left: 54px; top: 0;
       background: #fff; border-radius: 12px;
       padding: 10px; display: flex; flex-direction: column; gap: 6px;
-      box-shadow: 0 4px 20px rgba(0,0,0,.15); z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    }
+    .color-palette-overlay {
+      position: fixed; z-index: 120;
     }
     .color-dot {
       width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid transparent;
@@ -189,10 +237,25 @@
       padding: 4px 0;
     }
     .width-label { font-size: 9px; color: #9ca3af; }
-    .width-control input[type=range] {
+    .width-slider-wrap {
+      position: relative; display: flex; align-items: center;
+      justify-content: center; width: 40px; height: 70px;
+    }
+    .width-triangle {
+      position: absolute;
+      left: 50%; transform: translateX(-50%);
+      width: 24px; height: 68px;
+      background: linear-gradient(to top, #e0e0e0 0%, #9ca3af 100%);
+      clip-path: polygon(0% 0%, 100% 0%, 65% 100%, 35% 100%);
+      pointer-events: none;
+      border-radius: 3px 3px 0 0;
+      opacity: 0.55;
+    }
+    .width-slider-wrap input[type=range] {
+      position: relative; z-index: 1;
       width: 40px; appearance: none;
       writing-mode: vertical-lr; direction: rtl;
-      height: 70px;
+      height: 70px; background: transparent;
     }
 
     /* ── Page tabs ────────────────────────────────────────────────────────── */
@@ -224,61 +287,81 @@
     /* ── Sticky notes ─────────────────────────────────────────────────────── */
     .sticky-note {
       position: absolute; border-radius: 6px;
-      box-shadow: 0 4px 16px rgba(0,0,0,.12), 0 1px 4px rgba(0,0,0,.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.1);
       display: flex; flex-direction: column;
-      overflow: visible; z-index: 50;
+      overflow: hidden; z-index: 50;
       min-width: 120px; min-height: 80px;
     }
-    .sticky-header {
+    .sticky-handle {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 4px 6px; cursor: grab; border-radius: 4px 4px 0 0;
-      user-select: none;
+      padding: 2px 6px; height: 22px; cursor: grab;
+      background: rgba(0,0,0,0.12);
+      user-select: none; flex-shrink: 0;
+      touch-action: none;
     }
-    .sticky-header:active { cursor: grabbing; }
-    .sticky-dots { font-size: 14px; color: rgba(0,0,0,.4); }
+    .sticky-handle:active { cursor: grabbing; }
+    .sticky-dots { font-size: 13px; color: rgba(0,0,0,.35); }
     .sticky-menu-btn {
-      font-size: 16px; color: rgba(0,0,0,.5); padding: 2px 4px;
-      border-radius: 4px;
+      font-size: 15px; color: rgba(0,0,0,.5); padding: 1px 4px;
+      border-radius: 4px; line-height: 1;
     }
-    .sticky-menu-btn:hover { background: rgba(0,0,0,.1); }
+    .sticky-menu-btn:hover { background: rgba(0,0,0,.12); }
     .sticky-menu {
-      position: absolute; right: 0; top: 28px;
+      position: absolute; right: 0; top: 24px;
       background: #fff; border-radius: 10px; padding: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,.15); z-index: 200; min-width: 140px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15); z-index: 200; min-width: 150px;
     }
     .sticky-menu-label { font-size: 11px; color: #9ca3af; margin-bottom: 8px; }
     .sticky-colors { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .sticky-action-btn {
+      width: 100%; text-align: left; font-size: 13px; color: #374151;
+      padding: 6px 8px; border-radius: 6px; transition: background .12s;
+      margin-bottom: 2px;
+    }
+    .sticky-action-btn:hover { background: #f3f4f6; }
     .sticky-delete-btn {
       width: 100%; text-align: left; font-size: 13px; color: #dc2626;
       padding: 6px 8px; border-radius: 6px; transition: background .12s;
     }
     .sticky-delete-btn:hover { background: #fee2e2; }
-
-    .sticky-body { flex: 1; padding: 8px 10px; overflow: hidden; }
-    .sticky-textarea {
-      width: 100%; height: 100%; border: none; outline: none;
-      background: transparent; resize: none; font-size: 14px;
-      line-height: 1.5; color: #1a1a2e;
+    .sticky-canvas-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
     }
-    .sticky-text { font-size: 14px; line-height: 1.5; color: #1a1a2e; height: 100%; }
-    .sticky-placeholder { color: #bbb; font-style: italic; }
-
+    .sticky-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+    .sticky-canvas-base { z-index: 0; }
+    .sticky-canvas-overlay { z-index: 1; }
     .sticky-resize {
       position: absolute; bottom: 2px; right: 4px;
       font-size: 14px; color: rgba(0,0,0,.3); cursor: se-resize;
-      user-select: none; line-height: 1;
+      user-select: none; line-height: 1; z-index: 1;
+      touch-action: none;
     }
   </style>
 </head>
 <body>
   <div id="app"></div>
 
-  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 
   <script>
+    const isLocalhost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(console.warn);
+      window.addEventListener("load", async () => {
+        if (isLocalhost) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+          return;
+        }
+        navigator.serviceWorker.register("sw.js").catch(console.warn);
       });
     }
   </script>
