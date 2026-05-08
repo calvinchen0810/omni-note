@@ -94,12 +94,19 @@
       box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
       overflow: visible;
     }
+    .top-bar-leading {
+      display: flex; align-items: center; gap: 8px;
+      min-width: 0; flex: 0 1 auto;
+    }
     .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
       color: #2563eb; font-size: 13px; font-weight: 600;
       padding: 4px 8px; border-radius: 6px; transition: background .15s, color .15s;
       flex-shrink: 0;
     }
     .btn-back:hover { background: #eff6ff; }
+    .btn-back-icon { flex-shrink: 0; }
+    .btn-back-label { white-space: nowrap; }
     .notebook-title {
       flex: 0 1 200px; font-size: 15px; font-weight: 600;
       color: #1a1a2e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -111,33 +118,27 @@
       overflow-y: hidden;
       scrollbar-width: thin;
     }
-    .zoom-controls {
-      display: flex; align-items: center; gap: 6px;
-      padding: 4px; border-radius: 10px;
-      background: #f3f4f6;
-    }
-    .zoom-btn, .zoom-value {
-      min-width: 28px; height: 26px;
-      border-radius: 6px;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 12px; color: #374151;
-      background: #fff;
-      border: 1px solid #e5e7eb;
-    }
-    .zoom-btn:hover, .zoom-value:hover {
-      background: #eff6ff; color: #1d4ed8;
-    }
-    .zoom-value {
-      min-width: 54px; font-weight: 600;
+    .top-bar-actions {
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+      margin-left: auto;
     }
     .save-indicator {
-      font-size: 11px;
-      color: #6b7280;
-      padding: 0 2px;
-      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 32px;
+      padding: 0;
     }
-    .save-indicator .saving { color: #f59e0b; }
-    .save-indicator .saved  { color: #10b981; }
+    .save-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 2px rgba(255,255,255,.95), 0 0 0 3px rgba(209,213,219,.85);
+    }
+    .save-status-dot.saving { background: #f59e0b; }
+    .save-status-dot.saved  { background: #10b981; }
 
     /* ── Export menu ──────────────────────────────────────────────────────── */
     .export-menu-wrap { position: relative; }
@@ -175,6 +176,9 @@
     .canvas-wrapper {
       flex: 1; position: relative; overflow: auto;
       background: #e8eaed;
+    }
+    .canvas-wrapper.is-pan-mode {
+      cursor: grab;
     }
     .page-stage {
       min-width: 100%; min-height: 100%;
@@ -286,21 +290,71 @@
       position: absolute; right: 0; top: calc(100% + 6px);
       background: #fff; border-radius: 12px; padding: 12px;
       box-shadow: 0 8px 28px rgba(0,0,0,.14); z-index: 150;
-      min-width: 180px;
+      min-width: 220px;
     }
-    .zoom-controls-row {
-      display: flex; align-items: center; gap: 6px;
-      justify-content: center; margin-bottom: 10px;
+    .zoom-slider-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 10px;
     }
-    .zoom-presets {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    .zoom-slider-value {
+      font-size: 18px; font-weight: 700; color: #111827;
     }
-    .zoom-preset {
-      padding: 5px 4px; border-radius: 6px; font-size: 12px; font-weight: 500;
-      color: #374151; text-align: center; background: #f3f4f6; transition: background .12s;
+    .zoom-reset {
+      padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      color: #2563eb; background: #eff6ff;
     }
-    .zoom-preset:hover { background: #eff6ff; color: #1d4ed8; }
-    .zoom-preset.active { background: #dbeafe; color: #1d4ed8; font-weight: 700; }
+    .zoom-slider {
+      width: 100%;
+      accent-color: #2563eb;
+    }
+    .zoom-slider-scale {
+      display: flex; justify-content: space-between; margin-top: 8px;
+      font-size: 11px; color: #6b7280;
+    }
+
+    @media (max-width: 820px) {
+      .top-bar {
+        flex-wrap: wrap;
+        align-content: flex-start;
+        padding: 8px 10px 6px;
+        gap: 6px;
+      }
+      .top-bar-leading {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .btn-back-label {
+        display: none;
+      }
+      .notebook-title {
+        flex: 1 1 auto;
+      }
+      .top-bar-actions {
+        margin-left: 0;
+      }
+      .top-bar-tools {
+        order: 3;
+        flex: 1 0 100%;
+        width: 100%;
+        padding-bottom: 2px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .top-bar-leading {
+        flex: 1 1 0;
+      }
+      .notebook-title {
+        max-width: 42vw;
+      }
+      .top-bar-actions {
+        gap: 6px;
+      }
+      .zoom-dropdown {
+        right: -10px;
+        min-width: min(240px, calc(100vw - 20px));
+      }
+    }
 
 
     /* ── Page tabs ────────────────────────────────────────────────────────── */

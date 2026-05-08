@@ -253,8 +253,8 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
   const onPointerDown = useCallback((e) => {
     if (e.pointerType === "touch" && !e.isPrimary) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    const p = pos(e);
     const tool = state.currentTool;
+    const p = pos(e);
     if (tool === "pen" || tool === "highlighter") penDown(p);
     else if (tool === "eraser") { sess.current.erasing = true; eraserMove(p); }
     else if (tool === "select") lassoDown(p);
@@ -262,8 +262,8 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
 
   const onPointerMove = useCallback((e) => {
     if (e.pointerType === "touch" && !e.isPrimary) return;
-    const p = pos(e);
     const tool = state.currentTool;
+    const p = pos(e);
     if (tool === "pen" || tool === "highlighter") penMove(p);
     else if (tool === "eraser") eraserMove(p);
     else if (tool === "select") lassoMove(p);
@@ -271,8 +271,8 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
 
   const onPointerUp = useCallback((e) => {
     if (e.pointerType === "touch" && !e.isPrimary) return;
-    const p = pos(e);
     const tool = state.currentTool;
+    const p = pos(e);
     if (tool === "pen" || tool === "highlighter") penUp();
     else if (tool === "eraser") { sess.current.erasing = false; eraserLeave(); }
     else if (tool === "select") lassoUp(p);
@@ -280,8 +280,14 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const cursor = { pen: "none", highlighter: "none", eraser: "none",
-                   select: "default", sticky: "cell" }[state.currentTool] ?? "crosshair";
+  const cursor = {
+    pen: "none",
+    highlighter: "none",
+    eraser: "none",
+    select: "default",
+    sticky: "cell",
+    pan: "grab",
+  }[state.currentTool] ?? "crosshair";
 
   return h("div", {
     ref: containerRef,

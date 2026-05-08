@@ -14,7 +14,7 @@ import { exportCurrentPageAsPng, exportAllPagesAsPdf } from "./export-utils.js";
 
 const PAGE_WIDTH = 1200;
 const PAGE_HEIGHT = 1700;
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 2.0;
 
 // ── App ───────────────────────────────────────────────────────────────────────
@@ -24,6 +24,15 @@ function App() {
   const [notebooks, setNotebooks]   = useReducer((s, a) => a, []);
   const [zoom, setZoom] = useState(1);
   const saveTimerRef = useRef(null);
+  const canvasViewportRef = useRef(null);
+  const panSessionRef = useRef({
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+  });
 
   // ── Load notebooks on mount ───────────────────────────────────────────────
 
@@ -208,6 +217,46 @@ function App() {
     setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next)));
   }
 
+  const onViewportPointerDown = useCallback((e) => {
+    if (state.currentTool !== "pan") return;
+    if (e.pointerType === "touch" && !e.isPrimary) return;
+    const viewport = canvasViewportRef.current;
+    if (!viewport) return;
+    e.preventDefault();
+    viewport.setPointerCapture?.(e.pointerId);
+    viewport.style.cursor = "grabbing";
+    panSessionRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: viewport.scrollLeft,
+      startTop: viewport.scrollTop,
+    };
+  }, [state.currentTool]);
+
+  const onViewportPointerMove = useCallback((e) => {
+    if (state.currentTool !== "pan") return;
+    const viewport = canvasViewportRef.current;
+    const sess = panSessionRef.current;
+    if (!viewport || !sess.active || sess.pointerId !== e.pointerId) return;
+    e.preventDefault();
+    viewport.scrollLeft = sess.startLeft - (e.clientX - sess.startX);
+    viewport.scrollTop = sess.startTop - (e.clientY - sess.startY);
+  }, [state.currentTool]);
+
+  const onViewportPointerUp = useCallback((e) => {
+    const viewport = canvasViewportRef.current;
+    const sess = panSessionRef.current;
+    if (!viewport || !sess.active) return;
+    if (typeof e?.pointerId === "number" && sess.pointerId !== e.pointerId) return;
+    panSessionRef.current = { active: false, pointerId: null, startX: 0, startY: 0, startLeft: 0, startTop: 0 };
+    viewport.style.cursor = state.currentTool === "pan" ? "grab" : "";
+    if (typeof e?.pointerId === "number" && viewport.hasPointerCapture?.(e.pointerId)) {
+      viewport.releasePointerCapture(e.pointerId);
+    }
+  }, [state.currentTool]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (state.view === "list") {
@@ -226,8 +275,16 @@ function App() {
 
   return h("div", { class: "app editor" },
     h("div", { class: "top-bar" },
-      h("button", { class: "btn-back", onClick: handleBack }, "← 返回"),
-      h("div", { class: "notebook-title" }, state.notebook?.title ?? ""),
+      h("div", { class: "top-bar-leading" },
+        h("button", { class: "btn-back", onClick: handleBack, title: "返回筆記本列表" },
+          h("svg", { class: "btn-back-icon", viewBox: "0 0 24 24", width: 18, height: 18, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+            h("path", { d: "M15 18l-6-6 6-6" }),
+            h("path", { d: "M21 12H9" })
+          ),
+          h("span", { class: "btn-back-label" }, "返回")
+        ),
+        h("div", { class: "notebook-title" }, state.notebook?.title ?? "")
+      ),
       h("div", { class: "top-bar-tools" },
         h(Toolbar, {
           state,
@@ -237,17 +294,32 @@ function App() {
           onRedo: handleRedo,
         })
       ),
-      h("div", { class: "save-indicator" },
-        state.isDirty
-          ? h("span", { class: "saving" }, "未儲存")
-          : h("span", { class: "saved" }, "✓ 已儲存")
+      h("div", { class: "top-bar-actions" },
+        h(ZoomMenu, { zoom, onZoom: updateZoom }),
+        h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf }),
+        h("div", {
+          class: "save-indicator",
+          title: state.isDirty ? "未儲存" : "已儲存",
+          "aria-label": state.isDirty ? "未儲存" : "已儲存",
+        },
+          h("span", {
+            class: ["save-status-dot", state.isDirty ? "saving" : "saved"].join(" "),
+          })
+        )
       ),
-      h(ZoomMenu, { zoom, onZoom: updateZoom }),
-      h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf })
     ),
 
     h("div", { class: "editor-main" },
-      h("div", { class: "canvas-wrapper" },
+      h("div", {
+        class: ["canvas-wrapper", state.currentTool === "pan" && "is-pan-mode"].filter(Boolean).join(" "),
+        ref: canvasViewportRef,
+        style: { touchAction: state.currentTool === "pan" ? "none" : "auto" },
+        onPointerDown: onViewportPointerDown,
+        onPointerMove: onViewportPointerMove,
+        onPointerUp: onViewportPointerUp,
+        onPointerCancel: onViewportPointerUp,
+        onPointerLeave: onViewportPointerUp,
+      },
         h("div", { class: "page-stage" },
           h("div", {
             class: "page-zoom-layer",
@@ -275,7 +347,7 @@ function App() {
                 h(StickyNote, {
                   key: note.id,
                   note,
-                  interactive: true,
+                  interactive: state.currentTool !== "pan",
                   zoom,
                   tool: state.currentTool,
                   penColor: state.penColor,
@@ -305,7 +377,6 @@ function App() {
 
 function ZoomMenu({ zoom, onZoom }) {
   const [open, setOpen] = useState(false);
-  const presets = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
   function close() {
     setOpen(false);
@@ -325,31 +396,25 @@ function ZoomMenu({ zoom, onZoom }) {
       )
     ),
     open && h("div", { class: "zoom-dropdown" },
-      h("div", { class: "zoom-controls-row" },
+      h("div", { class: "zoom-slider-header" },
+        h("span", { class: "zoom-slider-value" }, `${Math.round(zoom * 100)}%`),
         h("button", {
-          class: "zoom-btn",
-          onClick: () => onZoom(zoom - 0.1),
-        }, "−"),
-        h("button", {
-          class: "zoom-value",
-          onClick: () => { onZoom(1); close(); },
-        }, `${Math.round(zoom * 100)}%`),
-        h("button", {
-          class: "zoom-btn",
-          onClick: () => onZoom(zoom + 0.1),
-        }, "+")
+          class: "zoom-reset",
+          onClick: () => onZoom(1),
+        }, "100%")
       ),
-      h("div", { class: "zoom-presets" },
-        presets.map((preset) =>
-          h("button", {
-            key: preset,
-            class: ["zoom-preset", Math.abs(zoom - preset) < 0.01 && "active"].filter(Boolean).join(" "),
-            onClick: () => {
-              onZoom(preset);
-              close();
-            },
-          }, `${Math.round(preset * 100)}%`)
-        )
+      h("input", {
+        class: "zoom-slider",
+        type: "range",
+        min: 10,
+        max: 200,
+        step: 5,
+        value: Math.round(zoom * 100),
+        onInput: (e) => onZoom(Number(e.target.value) / 100),
+      }),
+      h("div", { class: "zoom-slider-scale" },
+        h("span", null, "10%"),
+        h("span", null, "200%")
       )
     ),
     open && h("div", { class: "export-backdrop", onClick: close })

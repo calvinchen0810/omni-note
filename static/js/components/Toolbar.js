@@ -149,6 +149,16 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
       )
     ),
 
+    h(ToolBtn, { active: tool === "pan", title: "手掌拖動畫布", onClick: () => setTool("pan") },
+      h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round" },
+        h("path", { d: "M7 11V5a1 1 0 0 1 2 0v5" }),
+        h("path", { d: "M11 11V4a1 1 0 0 1 2 0v7" }),
+        h("path", { d: "M15 11V6a1 1 0 0 1 2 0v7" }),
+        h("path", { d: "M5 12.5a1.5 1.5 0 0 1 3 0V14" }),
+        h("path", { d: "M17 11h1a2 2 0 0 1 2 2v2.5C20 19.09 17.09 22 13.5 22h-.56a6 6 0 0 1-4.24-1.76l-2.18-2.18A3.5 3.5 0 0 1 5.5 15.6V12.5" })
+      )
+    ),
+
     // ── Sticky ────────────────────────────────────────────────────────────────
     h(ToolBtn, { active: tool === "sticky", title: "新增便利貼 (N)", onClick: () => {
       setTool("sticky");

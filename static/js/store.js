@@ -4,7 +4,7 @@ export const initialState = {
   pages: [],
   currentPageIndex: 0,
 
-  currentTool: "pen",     // "pen" | "highlighter" | "eraser" | "select" | "sticky"
+  currentTool: "pen",     // "pen" | "highlighter" | "eraser" | "select" | "pan" | "sticky"
   eraserMode: "precise",  // "precise" | "stroke"
   penColor: "#1a1a2e",
   penWidth: 3,
