@@ -1,4 +1,4 @@
-const CACHE = "omni-note-v2";
+const CACHE = "omni-note-v3";
 
 const PRECACHE_RELATIVE = [
   "",

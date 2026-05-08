@@ -38,16 +38,9 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
       setColorPalettePos(null);
       return;
     }
-
     const rect = e.currentTarget.getBoundingClientRect();
-    const canvasRect = document.querySelector(".canvas-wrapper")?.getBoundingClientRect();
-    const paletteHeight = 190;
-    const top = Math.min(
-      window.innerHeight - paletteHeight,
-      Math.max(8, rect.top - 8)
-    );
-    const left = Math.max(rect.right + 12, (canvasRect?.left ?? rect.right) + 8);
-
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 168));
+    const top = rect.bottom + 8;
     setColorPalettePos({ left, top });
     setShowColorPicker(true);
   }

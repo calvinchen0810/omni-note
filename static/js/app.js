@@ -225,48 +225,28 @@ function App() {
   const currentPage = state.pages[state.currentPageIndex];
 
   return h("div", { class: "app editor" },
-    // ── Top bar ───────────────────────────────────────────────────────────────
     h("div", { class: "top-bar" },
       h("button", { class: "btn-back", onClick: handleBack }, "← 返回"),
       h("div", { class: "notebook-title" }, state.notebook?.title ?? ""),
-      h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf }),
-      h("div", { class: "zoom-controls" },
-        h("button", {
-          class: "zoom-btn",
-          title: "縮小",
-          onClick: () => updateZoom(zoom - 0.1),
-        }, "−"),
-        h("button", {
-          class: "zoom-value",
-          title: "重設 100%",
-          onClick: () => setZoom(1),
-        }, `${Math.round(zoom * 100)}%`),
-        h("button", {
-          class: "zoom-btn",
-          title: "放大",
-          onClick: () => updateZoom(zoom + 0.1),
-        }, "+")
+      h("div", { class: "top-bar-tools" },
+        h(Toolbar, {
+          state,
+          dispatch,
+          onAddStickyNote: handleAddStickyNote,
+          onUndo: handleUndo,
+          onRedo: handleRedo,
+        })
       ),
       h("div", { class: "save-indicator" },
         state.isDirty
           ? h("span", { class: "saving" }, "未儲存")
           : h("span", { class: "saved" }, "✓ 已儲存")
-      )
+      ),
+      h(ZoomMenu, { zoom, onZoom: updateZoom }),
+      h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf })
     ),
 
-    // ── Main area ─────────────────────────────────────────────────────────────
     h("div", { class: "editor-main" },
-
-      // Left toolbar
-      h(Toolbar, {
-        state,
-        dispatch,
-        onAddStickyNote: handleAddStickyNote,
-        onUndo: handleUndo,
-        onRedo: handleRedo,
-      }),
-
-      // Canvas + sticky notes layer
       h("div", { class: "canvas-wrapper" },
         h("div", { class: "page-stage" },
           h("div", {
@@ -291,8 +271,6 @@ function App() {
                 pageWidth: PAGE_WIDTH,
                 pageHeight: PAGE_HEIGHT,
               }),
-
-              // Sticky notes as DOM overlay
               currentPage && (currentPage.sticky_notes ?? []).map((note) =>
                 h(StickyNote, {
                   key: note.id,
@@ -316,17 +294,67 @@ function App() {
       )
     ),
 
-    // ── Bottom page tabs ──────────────────────────────────────────────────────
     h(PageTabs, {
       state,
       dispatch,
-      onAddPage:    handleAddPage,
+      onAddPage: handleAddPage,
       onDeletePage: handleDeletePage,
     })
   );
 }
 
-// ── Export dropdown menu ──────────────────────────────────────────────────────
+function ZoomMenu({ zoom, onZoom }) {
+  const [open, setOpen] = useState(false);
+  const presets = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
+  function close() {
+    setOpen(false);
+  }
+
+  return h("div", { class: "zoom-menu-wrap" },
+    h("button", {
+      class: "icon-btn",
+      title: `縮放 (${Math.round(zoom * 100)}%)`,
+      onClick: () => setOpen(!open),
+    },
+      h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+        h("circle", { cx: 11, cy: 11, r: 8 }),
+        h("line", { x1: 21, y1: 21, x2: 16.65, y2: 16.65 }),
+        h("line", { x1: 11, y1: 8, x2: 11, y2: 14 }),
+        h("line", { x1: 8, y1: 11, x2: 14, y2: 11 })
+      )
+    ),
+    open && h("div", { class: "zoom-dropdown" },
+      h("div", { class: "zoom-controls-row" },
+        h("button", {
+          class: "zoom-btn",
+          onClick: () => onZoom(zoom - 0.1),
+        }, "−"),
+        h("button", {
+          class: "zoom-value",
+          onClick: () => { onZoom(1); close(); },
+        }, `${Math.round(zoom * 100)}%`),
+        h("button", {
+          class: "zoom-btn",
+          onClick: () => onZoom(zoom + 0.1),
+        }, "+")
+      ),
+      h("div", { class: "zoom-presets" },
+        presets.map((preset) =>
+          h("button", {
+            key: preset,
+            class: ["zoom-preset", Math.abs(zoom - preset) < 0.01 && "active"].filter(Boolean).join(" "),
+            onClick: () => {
+              onZoom(preset);
+              close();
+            },
+          }, `${Math.round(preset * 100)}%`)
+        )
+      )
+    ),
+    open && h("div", { class: "export-backdrop", onClick: close })
+  );
+}
 
 function ExportMenu({ onExportPng, onExportPdf }) {
   const [open, setOpen] = useState(false);
@@ -335,19 +363,35 @@ function ExportMenu({ onExportPng, onExportPdf }) {
   async function handlePdf() {
     setOpen(false);
     setLoading(true);
-    try { await onExportPdf(); } finally { setLoading(false); }
+    try {
+      await onExportPdf();
+    } finally {
+      setLoading(false);
+    }
   }
 
   return h("div", { class: "export-menu-wrap" },
     h("button", {
-      class: "btn-export",
+      class: "icon-btn",
+      title: "匯出",
       onClick: () => setOpen(!open),
       disabled: loading,
-    }, loading ? "匯出中…" : "匯出 ▾"),
+    },
+      loading
+        ? h("span", { style: "font-size:11px;font-weight:600" }, "…")
+        : h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+            h("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+            h("polyline", { points: "7 10 12 15 17 10" }),
+            h("line", { x1: 12, y1: 15, x2: 12, y2: 3 })
+          )
+    ),
     open && h("div", { class: "export-dropdown" },
       h("button", {
         class: "export-item",
-        onClick: () => { setOpen(false); onExportPng(); },
+        onClick: () => {
+          setOpen(false);
+          onExportPng();
+        },
       },
         h("span", { class: "export-icon" }, "🖼"),
         h("div", null,
