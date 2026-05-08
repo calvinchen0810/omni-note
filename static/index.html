@@ -141,9 +141,9 @@
     /* ── Toolbar ──────────────────────────────────────────────────────────── */
     .toolbar {
       display: flex; flex-direction: column; align-items: center;
-      gap: 4px; padding: 10px 6px;
+      gap: 4px; padding: 10px 6px 0;
       background: #fff; border-right: 1px solid #e5e7eb;
-      width: 58px; flex-shrink: 0; overflow-y: auto;
+      min-width: 48px; flex-shrink: 0; overflow-y: auto;
       box-shadow: 1px 0 4px rgba(0,0,0,.04);
     }
     .tool-btn {
@@ -184,16 +184,35 @@
     .mode-badge.precise { background: #dbeafe; color: #1d4ed8; }
     .mode-badge.stroke  { background: #fce7f3; color: #be185d; }
 
-    .width-control {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      padding: 4px 0;
+    /* Width toggle popover */
+    .width-popover {
+      position: absolute; left: 52px; top: -4px;
+      background: #fff; border-radius: 10px;
+      padding: 10px 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15); z-index: 100;
+      display: flex; align-items: center; gap: 10px; white-space: nowrap;
     }
-    .width-label { font-size: 9px; color: #9ca3af; }
-    .width-control input[type=range] {
-      width: 40px; appearance: none;
-      writing-mode: vertical-lr; direction: rtl;
-      height: 70px;
+    .width-popover-label { font-size: 12px; color: #6b7280; }
+    .width-popover input[type=range] {
+      width: 110px; height: 4px; appearance: none;
+      background: #e5e7eb; border-radius: 2px; cursor: pointer;
     }
+    .width-popover input[type=range]::-webkit-slider-thumb {
+      appearance: none; width: 14px; height: 14px; border-radius: 50%;
+      background: #4f8ef7; cursor: pointer;
+    }
+    .width-value {
+      font-size: 12px; font-weight: 600; color: #374151;
+      min-width: 22px; text-align: right;
+    }
+
+    /* Toolbar resize grip */
+    .toolbar-grip {
+      width: 100%; height: 32px; flex-shrink: 0; margin-top: 4px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: ew-resize; border-top: 1px solid #f0f0f0; user-select: none;
+    }
+    .toolbar-grip:hover { background: #f9fafb; }
 
     /* ── Page tabs ────────────────────────────────────────────────────────── */
     .page-tabs {
@@ -268,6 +287,46 @@
       font-size: 14px; color: rgba(0,0,0,.3); cursor: se-resize;
       user-select: none; line-height: 1;
     }
+
+    /* ── Canvas controls (zoom + background) ──────────────────────────────── */
+    .canvas-controls {
+      position: absolute; bottom: 12px; right: 12px;
+      display: flex; align-items: center; gap: 3px;
+      z-index: 50;
+      background: rgba(255,255,255,0.92);
+      border-radius: 10px; padding: 4px 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+      backdrop-filter: blur(6px);
+    }
+    .cc-btn {
+      min-width: 30px; height: 28px; border-radius: 6px;
+      font-size: 13px; font-weight: 600; color: #374151;
+      background: transparent; padding: 0 6px;
+      transition: background .12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cc-btn:hover:not(:disabled) { background: #f3f4f6; }
+    .cc-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .cc-btn.active   { background: #eff6ff; color: #4f8ef7; }
+    .cc-zoom-pct { min-width: 44px; font-variant-numeric: tabular-nums; }
+    .cc-sep { width: 1px; height: 18px; background: #e5e7eb; margin: 0 2px; }
+    .cc-bg-btn { gap: 4px; }
+
+    /* Background picker dropdown */
+    .bg-picker {
+      position: absolute; bottom: calc(100% + 6px); right: 0;
+      background: #fff; border-radius: 10px; padding: 5px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.14); z-index: 51;
+      display: flex; flex-direction: column; gap: 2px; min-width: 76px;
+    }
+    .bg-opt {
+      padding: 7px 12px; border-radius: 6px;
+      font-size: 13px; text-align: left; width: 100%; color: #374151;
+      transition: background .1s;
+    }
+    .bg-opt:hover  { background: #f3f4f6; }
+    .bg-opt.active { background: #eff6ff; color: #4f8ef7; font-weight: 600; }
+    .cc-backdrop   { position: fixed; inset: 0; z-index: 49; }
   </style>
 </head>
 <body>

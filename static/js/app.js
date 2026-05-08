@@ -15,8 +15,10 @@ import { exportCurrentPageAsPng, exportAllPagesAsPdf } from "./export-utils.js";
 // ── App ───────────────────────────────────────────────────────────────────────
 
 function App() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch]           = useReducer(reducer, initialState);
   const [notebooks, setNotebooks]   = useReducer((s, a) => a, []);
+  const [zoom, setZoom]             = useState(1);
+  const [toolbarWidth, setToolbarWidth] = useState(58);
   const saveTimerRef = useRef(null);
 
   // ── Load notebooks on mount ───────────────────────────────────────────────
@@ -177,13 +179,13 @@ function App() {
     const page = state.pages[state.currentPageIndex];
     if (!page) return;
     const name = `${state.notebook?.title ?? "note"}-第${state.currentPageIndex + 1}頁`;
-    exportCurrentPageAsPng(page, name);
+    exportCurrentPageAsPng(page, name, state.bgType ?? "ruled");
   }
 
   async function handleExportPdf() {
     if (!state.pages.length) return;
     try {
-      await exportAllPagesAsPdf(state.pages, state.notebook?.title ?? "note");
+      await exportAllPagesAsPdf(state.pages, state.notebook?.title ?? "note", state.bgType ?? "ruled");
     } catch (e) {
       console.error("export pdf:", e);
       alert("PDF 匯出失敗，請確認網路連線後再試。");
@@ -196,6 +198,23 @@ function App() {
     await saveCurrentPage();
     dispatch({ type: "BACK_TO_LIST" });
     await loadNotebooks();
+  }
+
+  // ── Toolbar resize ────────────────────────────────────────────────────────
+
+  function handleToolbarResizeStart(e) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = toolbarWidth;
+    function onMove(ev) {
+      setToolbarWidth(Math.max(48, Math.min(120, startW + (ev.clientX - startX))));
+    }
+    function onUp() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -213,6 +232,7 @@ function App() {
   }
 
   const currentPage = state.pages[state.currentPageIndex];
+  const interactive = ["select", "sticky"].includes(state.currentTool);
 
   return h("div", { class: "app editor" },
     // ── Top bar ───────────────────────────────────────────────────────────────
@@ -230,28 +250,39 @@ function App() {
     // ── Main area ─────────────────────────────────────────────────────────────
     h("div", { class: "editor-main" },
 
-      // Left toolbar
       h(Toolbar, {
         state,
         dispatch,
         onAddStickyNote: handleAddStickyNote,
         onUndo: handleUndo,
         onRedo: handleRedo,
+        toolbarWidth,
+        onResizeStart: handleToolbarResizeStart,
       }),
 
       // Canvas + sticky notes layer
       h("div", { class: "canvas-wrapper" },
-        h(Canvas, { state, dispatch, onSave: scheduleSave }),
+        h(Canvas, { state, dispatch, onSave: scheduleSave, zoom }),
 
-        // Sticky notes as DOM overlay
+        // Sticky notes as DOM overlay (positions scaled to match canvas zoom)
         currentPage && (currentPage.sticky_notes ?? []).map((note) =>
           h(StickyNote, {
             key:      note.id,
             note,
+            zoom,
+            interactive,
             onUpdate: (patch) => handleUpdateStickyNote(note.id, patch),
             onDelete: () => handleDeleteStickyNote(note.id),
           })
-        )
+        ),
+
+        // Floating zoom + background controls
+        h(CanvasControls, {
+          zoom,
+          onZoom: setZoom,
+          bgType: state.bgType ?? "ruled",
+          onSetBgType: (bgType) => dispatch({ type: "SET_BG_TYPE", bgType }),
+        })
       )
     ),
 
@@ -262,6 +293,60 @@ function App() {
       onAddPage:    handleAddPage,
       onDeletePage: handleDeletePage,
     })
+  );
+}
+
+// ── Canvas controls (zoom + background selector) ──────────────────────────────
+
+const ZOOM_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
+const BG_OPTS = [
+  { type: "ruled", label: "橫線" },
+  { type: "grid",  label: "方格" },
+  { type: "dot",   label: "點陣" },
+  { type: "blank", label: "空白" },
+];
+
+function CanvasControls({ zoom, onZoom, bgType, onSetBgType }) {
+  const [showBgMenu, setShowBgMenu] = useState(false);
+
+  function zoomIn() {
+    const next = ZOOM_STEPS.find((z) => z > zoom);
+    if (next) onZoom(next);
+  }
+  function zoomOut() {
+    const prev = [...ZOOM_STEPS].reverse().find((z) => z < zoom);
+    if (prev) onZoom(prev);
+  }
+
+  return h("div", { class: "canvas-controls" },
+    h("button", { class: "cc-btn", onClick: zoomOut, disabled: zoom <= 0.5, title: "縮小" }, "−"),
+    h("button", {
+      class: "cc-btn cc-zoom-pct",
+      onClick: () => onZoom(1),
+      title: "重設為 100%",
+    }, `${Math.round(zoom * 100)}%`),
+    h("button", { class: "cc-btn", onClick: zoomIn, disabled: zoom >= 2, title: "放大" }, "+"),
+
+    h("div", { class: "cc-sep" }),
+
+    h("div", { style: { position: "relative" } },
+      h("button", {
+        class: ["cc-btn cc-bg-btn", showBgMenu && "active"].filter(Boolean).join(" "),
+        title: "背景樣式",
+        onClick: () => setShowBgMenu(!showBgMenu),
+      }, "背景 ▾"),
+      showBgMenu && h("div", { class: "bg-picker" },
+        BG_OPTS.map((opt) =>
+          h("button", {
+            key: opt.type,
+            class: ["bg-opt", bgType === opt.type && "active"].filter(Boolean).join(" "),
+            onClick: () => { onSetBgType(opt.type); setShowBgMenu(false); },
+          }, opt.label)
+        )
+      ),
+      showBgMenu && h("div", { class: "cc-backdrop", onClick: () => setShowBgMenu(false) })
+    )
   );
 }
 

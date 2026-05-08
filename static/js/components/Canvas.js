@@ -13,10 +13,12 @@ import {
   uid,
 } from "../canvas-utils.js";
 
-export function Canvas({ state, dispatch, onSave }) {
-  const baseRef    = useRef(null);
-  const overlayRef = useRef(null);
+export function Canvas({ state, dispatch, onSave, zoom = 1 }) {
+  const baseRef      = useRef(null);
+  const overlayRef   = useRef(null);
   const containerRef = useRef(null);
+  const zoomRef      = useRef(zoom);
+  zoomRef.current    = zoom;   // always up-to-date, no stale closure
 
   // Mutable drawing session — not React state (too high-frequency)
   const sess = useRef({
@@ -37,7 +39,9 @@ export function Canvas({ state, dispatch, onSave }) {
   function resizeCanvases() {
     const c = containerRef.current;
     if (!c) return;
-    const { width, height } = c.getBoundingClientRect();
+    // Use client dimensions (unaffected by inner CSS transform)
+    const width  = c.clientWidth;
+    const height = c.clientHeight;
     for (const ref of [baseRef, overlayRef]) {
       if (ref.current && (ref.current.width !== width || ref.current.height !== height)) {
         ref.current.width  = width;
@@ -61,12 +65,12 @@ export function Canvas({ state, dispatch, onSave }) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawPageBackground(ctx, canvas.width, canvas.height);
+    drawPageBackground(ctx, canvas.width, canvas.height, state.bgType ?? "ruled");
     const page = state.pages[state.currentPageIndex];
     renderAllStrokes(ctx, overrideStrokes ?? page?.strokes ?? []);
   }
 
-  useEffect(() => { redrawBase(); }, [state.pages, state.currentPageIndex]);
+  useEffect(() => { redrawBase(); }, [state.pages, state.currentPageIndex, state.bgType]);
 
   // ── Redraw overlay when selection changes ─────────────────────────────────
 
@@ -81,13 +85,14 @@ export function Canvas({ state, dispatch, onSave }) {
     }
   }, [state.lassoPath, state.selectedStrokeIds]);
 
-  // ── Pointer position helper ───────────────────────────────────────────────
+  // ── Pointer position helper (accounts for CSS zoom) ──────────────────────
 
   function pos(e) {
     const rect = overlayRef.current.getBoundingClientRect();
+    const z = zoomRef.current;
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) / z,
+      y: (e.clientY - rect.top)  / z,
       pressure: e.pressure > 0 ? e.pressure : 0.5,
     };
   }
@@ -142,10 +147,8 @@ export function Canvas({ state, dispatch, onSave }) {
 
     if (result.changed) {
       sess.current.pendingErasedStrokes = result.strokes;
-      // Optimistic visual update without touching Redux
       redrawBase(result.strokes);
 
-      // Debounce the Redux dispatch so rapid erasing is a single undo entry
       clearTimeout(sess.current.eraseTimer);
       sess.current.eraseTimer = setTimeout(() => {
         dispatch({ type: "SET_STROKES", strokes: sess.current.pendingErasedStrokes, pushUndo: true });
@@ -164,7 +167,6 @@ export function Canvas({ state, dispatch, onSave }) {
 
   function lassoDown(p) {
     if (state.selectedStrokeIds.length > 0) {
-      // Start drag of existing selection
       sess.current.dragging = true;
       sess.current.dragStart = p;
       sess.current.dragBaseStrokes = state.pages[state.currentPageIndex]?.strokes ?? [];
@@ -260,16 +262,24 @@ export function Canvas({ state, dispatch, onSave }) {
     ref: containerRef,
     style: { position: "relative", flex: 1, overflow: "hidden" },
   },
-    h("canvas", { ref: baseRef, style: { position: "absolute", inset: 0 } }),
-    h("canvas", {
-      ref: overlayRef,
-      style: { position: "absolute", inset: 0, cursor, touchAction: "none" },
-      onPointerDown,
-      onPointerMove,
-      onPointerUp,
-      onPointerCancel: onPointerUp,
-      onPointerLeave: () => { if (state.currentTool === "eraser") eraserLeave(); },
-    })
+    h("div", {
+      style: {
+        position: "absolute", inset: 0,
+        transformOrigin: "0 0",
+        transform: zoom !== 1 ? `scale(${zoom})` : undefined,
+      },
+    },
+      h("canvas", { ref: baseRef, style: { position: "absolute", inset: 0 } }),
+      h("canvas", {
+        ref: overlayRef,
+        style: { position: "absolute", inset: 0, cursor, touchAction: "none" },
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel: onPointerUp,
+        onPointerLeave: () => { if (state.currentTool === "eraser") eraserLeave(); },
+      })
+    )
   );
 }
 

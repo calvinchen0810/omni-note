@@ -190,28 +190,49 @@ export function drawEraserCursor(ctx, x, y, radius) {
   ctx.restore();
 }
 
-export function drawPageBackground(ctx, w, h) {
+export function drawPageBackground(ctx, w, h, bgType = "ruled") {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
-  // Ruled lines
-  ctx.strokeStyle = "#e8eaf0";
-  ctx.lineWidth = 1;
-  const spacing = 36;
-  for (let y = spacing; y < h; y += spacing) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
-  }
+  const spacing = 56;
 
-  // Margin line
-  ctx.strokeStyle = "#f5c6cb";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(64, 0);
-  ctx.lineTo(64, h);
-  ctx.stroke();
+  if (bgType === "ruled") {
+    ctx.strokeStyle = "#e8eaf0";
+    ctx.lineWidth = 1;
+    for (let y = spacing; y < h; y += spacing) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "#f5c6cb";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(64, 0);
+    ctx.lineTo(64, h);
+    ctx.stroke();
+
+  } else if (bgType === "grid") {
+    ctx.strokeStyle = "#e8eaf0";
+    ctx.lineWidth = 1;
+    for (let y = spacing; y < h; y += spacing) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    for (let x = spacing; x < w; x += spacing) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+
+  } else if (bgType === "dot") {
+    ctx.fillStyle = "#c8ccd8";
+    for (let y = spacing; y < h; y += spacing) {
+      for (let x = spacing; x < w; x += spacing) {
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  // "blank" = white only (already filled above)
 }
 
 // ─── Util ─────────────────────────────────────────────────────────────────────

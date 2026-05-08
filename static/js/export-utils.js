@@ -9,12 +9,12 @@ function getExportDimensions() {
     : { width: 1600, height: 1200 };
 }
 
-function renderPageToOffscreen(page, width, height) {
+function renderPageToOffscreen(page, width, height, bgType = "ruled") {
   const offscreen = document.createElement("canvas");
   offscreen.width  = width;
   offscreen.height = height;
   const ctx = offscreen.getContext("2d");
-  drawPageBackground(ctx, width, height);
+  drawPageBackground(ctx, width, height, bgType);
   renderAllStrokes(ctx, page.strokes ?? []);
   renderStickyNotesOnCanvas(ctx, page.sticky_notes ?? []);
   return offscreen;
@@ -22,9 +22,9 @@ function renderPageToOffscreen(page, width, height) {
 
 // ── PNG export ────────────────────────────────────────────────────────────────
 
-export function exportCurrentPageAsPng(page, filename) {
+export function exportCurrentPageAsPng(page, filename, bgType = "ruled") {
   const { width, height } = getExportDimensions();
-  const canvas = renderPageToOffscreen(page, width, height);
+  const canvas = renderPageToOffscreen(page, width, height, bgType);
   const link = document.createElement("a");
   link.download = `${filename}.png`;
   link.href = canvas.toDataURL("image/png");
@@ -33,7 +33,7 @@ export function exportCurrentPageAsPng(page, filename) {
 
 // ── PDF export (all pages) ────────────────────────────────────────────────────
 
-export async function exportAllPagesAsPdf(pages, filename) {
+export async function exportAllPagesAsPdf(pages, filename, bgType = "ruled") {
   const { jsPDF } = await import("https://esm.sh/jspdf@2.5.1");
   const { width, height } = getExportDimensions();
   const orient = width >= height ? "landscape" : "portrait";
@@ -47,7 +47,7 @@ export async function exportAllPagesAsPdf(pages, filename) {
 
   for (let i = 0; i < pages.length; i++) {
     if (i > 0) pdf.addPage([width, height], orient);
-    const canvas = renderPageToOffscreen(pages[i], width, height);
+    const canvas = renderPageToOffscreen(pages[i], width, height, bgType);
     pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, width, height);
   }
 

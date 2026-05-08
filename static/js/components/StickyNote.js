@@ -3,10 +3,9 @@ import { useState, useRef, useCallback } from "https://esm.sh/preact@10.19.3/hoo
 
 const COLORS = ["#ffd60a", "#f783ac", "#74c0fc", "#a9e34b", "#ffa94d", "#e8e8e8"];
 
-export function StickyNote({ note, onUpdate, onDelete }) {
-  const [editing, setEditing] = useState(false);
+export function StickyNote({ note, onUpdate, onDelete, zoom = 1, interactive = true }) {
+  const [editing, setEditing]   = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const dragRef = useRef(null);
   const noteRef = useRef(null);
 
   // ── Drag to move ───────────────────────────────────────────────────────────
@@ -14,11 +13,16 @@ export function StickyNote({ note, onUpdate, onDelete }) {
   const onHeaderPointerDown = useCallback((e) => {
     if (editing || e.target.tagName === "BUTTON") return;
     e.preventDefault();
-    const startX = e.clientX - note.x;
-    const startY = e.clientY - note.y;
+    const startScreenX = e.clientX;
+    const startScreenY = e.clientY;
+    const startNoteX   = note.x;
+    const startNoteY   = note.y;
 
     function move(ev) {
-      onUpdate({ x: ev.clientX - startX, y: ev.clientY - startY });
+      onUpdate({
+        x: startNoteX + (ev.clientX - startScreenX) / zoom,
+        y: startNoteY + (ev.clientY - startScreenY) / zoom,
+      });
     }
     function up() {
       window.removeEventListener("pointermove", move);
@@ -26,7 +30,7 @@ export function StickyNote({ note, onUpdate, onDelete }) {
     }
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
-  }, [note.x, note.y, editing, onUpdate]);
+  }, [note.x, note.y, editing, onUpdate, zoom]);
 
   // ── Resize ─────────────────────────────────────────────────────────────────
 
@@ -40,8 +44,8 @@ export function StickyNote({ note, onUpdate, onDelete }) {
 
     function move(ev) {
       onUpdate({
-        width:  Math.max(120, startW + ev.clientX - startX),
-        height: Math.max(80,  startH + ev.clientY - startY),
+        width:  Math.max(120, startW + (ev.clientX - startX) / zoom),
+        height: Math.max(80,  startH + (ev.clientY - startY) / zoom),
       });
     }
     function up() {
@@ -50,7 +54,7 @@ export function StickyNote({ note, onUpdate, onDelete }) {
     }
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
-  }, [note.width, note.height, onUpdate]);
+  }, [note.width, note.height, onUpdate, zoom]);
 
   const bgLight = lightenColor(note.color);
 
@@ -58,12 +62,14 @@ export function StickyNote({ note, onUpdate, onDelete }) {
     ref: noteRef,
     class: "sticky-note",
     style: {
-      left:    note.x + "px",
-      top:     note.y + "px",
-      width:   note.width + "px",
-      height:  note.height + "px",
+      left:    note.x * zoom + "px",
+      top:     note.y * zoom + "px",
+      width:   note.width  * zoom + "px",
+      height:  note.height * zoom + "px",
       background: bgLight,
-      borderTop: `4px solid ${note.color}`,
+      borderTop: `${Math.max(2, 4 * zoom)}px solid ${note.color}`,
+      pointerEvents: interactive ? "auto" : "none",
+      opacity: interactive ? 1 : 0.6,
     },
   },
     // Header / drag handle
@@ -127,7 +133,6 @@ export function StickyNote({ note, onUpdate, onDelete }) {
 }
 
 function lightenColor(hex) {
-  // Return a very light version of the color for background
   try {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
