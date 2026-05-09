@@ -20,6 +20,8 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
   const [showEraserMenu, setShowEraserMenu] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPalettePos, setColorPalettePos] = useState(null);
+  const [showWidthPicker, setShowWidthPicker] = useState(false);
+  const [widthPickerPos, setWidthPickerPos] = useState(null);
 
   const tool = state.currentTool;
   const canUndo = state.undoStack.length > 0;
@@ -30,6 +32,8 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
     setShowEraserMenu(false);
     setShowColorPicker(false);
     setColorPalettePos(null);
+    setShowWidthPicker(false);
+    setWidthPickerPos(null);
   }
 
   function toggleColorPicker(e) {
@@ -38,11 +42,28 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
       setColorPalettePos(null);
       return;
     }
+    setShowWidthPicker(false);
+    setWidthPickerPos(null);
     const rect = e.currentTarget.getBoundingClientRect();
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - 168));
     const top = rect.bottom + 8;
     setColorPalettePos({ left, top });
     setShowColorPicker(true);
+  }
+
+  function toggleWidthPicker(e) {
+    if (showWidthPicker) {
+      setShowWidthPicker(false);
+      setWidthPickerPos(null);
+      return;
+    }
+    setShowColorPicker(false);
+    setColorPalettePos(null);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const left = Math.max(8, Math.min(rect.left - 20, window.innerWidth - 180));
+    const top = rect.bottom + 8;
+    setWidthPickerPos({ left, top });
+    setShowWidthPicker(true);
   }
 
   const activeColor = tool === "pen"
@@ -51,12 +72,30 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
       ? state.highlighterColor
       : null;
 
+  const activeWidth = tool === "pen"       ? state.penWidth
+    : tool === "highlighter" ? state.highlighterWidth
+    : tool === "eraser"      ? state.eraserWidth
+    : null;
+
+  const widthMin    = tool === "pen" ? 1  : tool === "highlighter" ? 8  : 10;
+  const widthMax    = tool === "pen" ? 12 : tool === "highlighter" ? 40 : 80;
+  const widthAction = tool === "pen" ? "SET_PEN_WIDTH"
+    : tool === "highlighter" ? "SET_HL_WIDTH" : "SET_ERASER_WIDTH";
+  const widthLabel  = tool === "eraser" ? "大小" : "粗細";
+
   // Size of the color swatch reflects current brush width (8–28px)
   const swatchSize = (() => {
     if (tool === "pen")         return Math.round(8  + (state.penWidth         - 1)  / 11 * 20);
     if (tool === "highlighter") return Math.round(12 + (state.highlighterWidth - 8)  / 32 * 16);
     return 26;
   })();
+
+  // Line thickness preview height for width button (2–12px range capped)
+  const previewH = tool === "pen"
+    ? Math.round(2 + (state.penWidth - 1) / 11 * 10)
+    : tool === "highlighter"
+      ? Math.round(4 + (state.highlighterWidth - 8) / 32 * 8)
+      : Math.round(3 + (state.eraserWidth - 10) / 70 * 9);
 
   return h("div", { class: "toolbar" },
 
@@ -76,8 +115,9 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
       )
     ),
 
-    // ── Color Swatch ──────────────────────────────────────────────────────────
-    activeColor && h("div", null,
+    // ── Color Swatch + Width button (pen / highlighter) ───────────────────────
+    activeColor && h("div", { style: { display: "flex", alignItems: "center", gap: "4px" } },
+      // Color swatch
       h("button", {
         class: "color-swatch-btn",
         title: "顏色",
@@ -89,6 +129,22 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
           style: { background: activeColor },
         })
       ),
+      // Width button (next to color swatch)
+      h("button", {
+        class: ["width-swatch-btn", showWidthPicker && "active"].filter(Boolean).join(" "),
+        title: widthLabel,
+        onClick: (e) => toggleWidthPicker(e),
+      },
+        h("span", {
+          class: "width-swatch-line",
+          style: {
+            height: `${previewH}px`,
+            background: activeColor,
+          },
+        })
+      ),
+
+      // Color palette overlay
       showColorPicker && colorPalettePos && h("div", {
         class: "color-palette color-palette-overlay",
         style: { left: `${colorPalettePos.left}px`, top: `${colorPalettePos.top}px` },
@@ -105,37 +161,78 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
             },
           })
         )
-      )
+      ),
+
+      // Width popover overlay
+      showWidthPicker && widthPickerPos && h("div", {
+        class: "width-popover-overlay",
+        style: { left: `${widthPickerPos.left}px`, top: `${widthPickerPos.top}px` },
+      },
+        h("span", { class: "width-popover-label" }, widthLabel),
+        h("div", { class: "width-slider-wrap" },
+          h("div", { class: "width-triangle" }),
+          h("input", {
+            type: "range", min: widthMin, max: widthMax, value: activeWidth,
+            onInput: (e) => dispatch({ type: widthAction, width: +e.target.value }),
+          })
+        ),
+        h("span", { class: "width-popover-value" }, activeWidth)
+      ),
     ),
 
     h(Divider),
 
-    // ── Eraser (with mode dropdown) ───────────────────────────────────────────
-    h("div", { style: { position: "relative" } },
-      h("div", { style: { display: "flex", alignItems: "center" } },
-        h(ToolBtn, {
-          active: tool === "eraser",
-          title: "橡皮擦 (E)",
-          onClick: () => setTool("eraser"),
-        },
-          h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
-            h("path", { d: "M20 20H7L3 16l9.586-9.586a2 2 0 0 1 2.828 0L20 11l-7 9" }),
-            h("path", { d: "m6 11 7.5-7.5" })
-          )
-        ),
-        h("button", {
-          class: "eraser-mode-toggle",
-          title: state.eraserMode === "precise" ? "切換: 逐點抹除（精確）" : "切換: 整筆刪除",
-          onClick: () => {
-            const next = state.eraserMode === "precise" ? "stroke" : "precise";
-            dispatch({ type: "SET_ERASER_MODE", mode: next });
-          },
-        },
-          state.eraserMode === "precise"
-            ? h("span", { class: "mode-badge precise" }, "精")
-            : h("span", { class: "mode-badge stroke" }, "筆")
+    // ── Eraser (with mode dropdown + width button) ────────────────────────────
+    h("div", { style: { position: "relative", display: "flex", alignItems: "center", gap: "2px" } },
+      h(ToolBtn, {
+        active: tool === "eraser",
+        title: "橡皮擦 (E)",
+        onClick: () => setTool("eraser"),
+      },
+        h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+          h("path", { d: "M20 20H7L3 16l9.586-9.586a2 2 0 0 1 2.828 0L20 11l-7 9" }),
+          h("path", { d: "m6 11 7.5-7.5" })
         )
-      )
+      ),
+      h("button", {
+        class: "eraser-mode-toggle",
+        title: state.eraserMode === "precise" ? "切換: 逐點抹除（精確）" : "切換: 整筆刪除",
+        onClick: () => {
+          const next = state.eraserMode === "precise" ? "stroke" : "precise";
+          dispatch({ type: "SET_ERASER_MODE", mode: next });
+        },
+      },
+        state.eraserMode === "precise"
+          ? h("span", { class: "mode-badge precise" }, "精")
+          : h("span", { class: "mode-badge stroke" }, "筆")
+      ),
+      // Width button for eraser
+      tool === "eraser" && h("button", {
+        class: ["width-swatch-btn", showWidthPicker && "active"].filter(Boolean).join(" "),
+        title: "橡皮擦大小",
+        style: { marginLeft: "2px" },
+        onClick: (e) => toggleWidthPicker(e),
+      },
+        h("span", {
+          class: "width-swatch-line",
+          style: { height: `${previewH}px`, background: "#9ca3af" },
+        })
+      ),
+      // Width popover overlay for eraser
+      tool === "eraser" && showWidthPicker && widthPickerPos && h("div", {
+        class: "width-popover-overlay",
+        style: { left: `${widthPickerPos.left}px`, top: `${widthPickerPos.top}px` },
+      },
+        h("span", { class: "width-popover-label" }, "大小"),
+        h("div", { class: "width-slider-wrap" },
+          h("div", { class: "width-triangle" }),
+          h("input", {
+            type: "range", min: widthMin, max: widthMax, value: activeWidth,
+            onInput: (e) => dispatch({ type: widthAction, width: +e.target.value }),
+          })
+        ),
+        h("span", { class: "width-popover-value" }, activeWidth)
+      ),
     ),
 
     h(Divider),
@@ -195,42 +292,6 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: canRedo ? "currentColor" : "#ccc", "stroke-width": 2 },
         h("path", { d: "M21 7v6h-6" }),
         h("path", { d: "M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" })
-      )
-    ),
-
-    // ── Width slider ──────────────────────────────────────────────────────────
-    (tool === "pen" || tool === "highlighter" || tool === "eraser") && h(Divider),
-
-    tool === "pen" && h("div", { class: "width-control" },
-      h("span", { class: "width-label" }, "粗細"),
-      h("div", { class: "width-slider-wrap" },
-        h("div", { class: "width-triangle" }),
-        h("input", {
-          type: "range", min: 1, max: 12, value: state.penWidth,
-          onInput: (e) => dispatch({ type: "SET_PEN_WIDTH", width: +e.target.value }),
-        })
-      )
-    ),
-
-    tool === "highlighter" && h("div", { class: "width-control" },
-      h("span", { class: "width-label" }, "粗細"),
-      h("div", { class: "width-slider-wrap" },
-        h("div", { class: "width-triangle" }),
-        h("input", {
-          type: "range", min: 8, max: 40, value: state.highlighterWidth,
-          onInput: (e) => dispatch({ type: "SET_HL_WIDTH", width: +e.target.value }),
-        })
-      )
-    ),
-
-    tool === "eraser" && h("div", { class: "width-control" },
-      h("span", { class: "width-label" }, "大小"),
-      h("div", { class: "width-slider-wrap" },
-        h("div", { class: "width-triangle" }),
-        h("input", {
-          type: "range", min: 10, max: 80, value: state.eraserWidth,
-          onInput: (e) => dispatch({ type: "SET_ERASER_WIDTH", width: +e.target.value }),
-        })
       )
     ),
   );
