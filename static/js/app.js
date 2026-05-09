@@ -216,17 +216,17 @@ function App() {
 
   // ── Export ───────────────────────────────────────────────────────────────
 
-  function handleExportPng() {
+  async function handleExportPng(withBg) {
     const page = state.pages[state.currentPageIndex];
     if (!page) return;
     const name = `${state.notebook?.title ?? "note"}-第${state.currentPageIndex + 1}頁`;
-    exportCurrentPageAsPng(page, name);
+    await exportCurrentPageAsPng(page, name, withBg);
   }
 
-  async function handleExportPdf() {
+  async function handleExportPdf(withBg) {
     if (!state.pages.length) return;
     try {
-      await exportAllPagesAsPdf(state.pages, state.notebook?.title ?? "note");
+      await exportAllPagesAsPdf(state.pages, state.notebook?.title ?? "note", withBg);
     } catch (e) {
       console.error("export pdf:", e);
       alert("PDF 匯出失敗，請確認網路連線後再試。");
@@ -458,12 +458,23 @@ function ZoomMenu({ zoom, onZoom }) {
 function ExportMenu({ onExportPng, onExportPdf }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [withBg, setWithBg] = useState(true);
+
+  async function handlePng() {
+    setOpen(false);
+    setLoading(true);
+    try {
+      await onExportPng(withBg);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handlePdf() {
     setOpen(false);
     setLoading(true);
     try {
-      await onExportPdf();
+      await onExportPdf(withBg);
     } finally {
       setLoading(false);
     }
@@ -485,12 +496,18 @@ function ExportMenu({ onExportPng, onExportPdf }) {
           )
     ),
     open && h("div", { class: "export-dropdown" },
+      h("label", { class: "export-bg-toggle" },
+        h("input", {
+          type: "checkbox",
+          checked: withBg,
+          onChange: (e) => setWithBg(e.target.checked),
+        }),
+        h("span", null, "包含背景")
+      ),
+      h("div", { class: "export-divider" }),
       h("button", {
         class: "export-item",
-        onClick: () => {
-          setOpen(false);
-          onExportPng();
-        },
+        onClick: handlePng,
       },
         h("span", { class: "export-icon" }, "🖼"),
         h("div", null,
