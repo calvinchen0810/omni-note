@@ -27,6 +27,7 @@ class Page(Base):
     notebook_id = Column(Integer, ForeignKey("notebooks.id"), nullable=False)
     page_index = Column(Integer, nullable=False, default=0)
     strokes_json = Column(Text, nullable=False, default="[]")
+    background_json = Column(Text, nullable=False, default='{"type":"blank"}')
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

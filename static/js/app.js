@@ -132,7 +132,10 @@ function App() {
   async function handleAddPage() {
     if (!state.notebook) return;
     try {
-      const page = await api.createPage(state.notebook.id);
+      const currentBg = state.pages[state.currentPageIndex]?.background;
+      // Inherit non-image backgrounds; image files aren't copied to new pages
+      const bg = currentBg?.type === "image" ? { type: "blank" } : (currentBg ?? { type: "blank" });
+      const page = await api.createPage(state.notebook.id, bg);
       dispatch({ type: "ADD_PAGE", page });
     } catch (e) {
       console.error("addPage:", e);
@@ -184,6 +187,31 @@ function App() {
   async function handleDeleteStickyNote(id) {
     dispatch({ type: "REMOVE_STICKY_NOTE", id });
     try { await api.deleteStickyNote(id); } catch (e) { console.error(e); }
+  }
+
+  // ── Background ───────────────────────────────────────────────────────────
+
+  async function handleUpdateBackground(bg) {
+    const page = state.pages[state.currentPageIndex];
+    if (!page) return;
+    dispatch({ type: "UPDATE_PAGE_BACKGROUND", background: bg });
+    try { await api.updateBackground(page.id, bg); } catch (e) { console.error(e); }
+  }
+
+  async function handleUploadBackgroundImage(file) {
+    const page = state.pages[state.currentPageIndex];
+    if (!page) return;
+    try {
+      const { background } = await api.uploadBackgroundImage(page.id, file);
+      dispatch({ type: "UPDATE_PAGE_BACKGROUND", background });
+    } catch (e) { console.error("uploadBackground:", e); }
+  }
+
+  async function handleRemoveBackgroundImage() {
+    const page = state.pages[state.currentPageIndex];
+    if (!page) return;
+    dispatch({ type: "UPDATE_PAGE_BACKGROUND", background: { type: "blank" } });
+    try { await api.deleteBackgroundImage(page.id); } catch (e) { console.error(e); }
   }
 
   // ── Export ───────────────────────────────────────────────────────────────
@@ -296,6 +324,12 @@ function App() {
       ),
       h("div", { class: "top-bar-actions" },
         h(ZoomMenu, { zoom, onZoom: updateZoom }),
+        h(BackgroundPicker, {
+          page: currentPage,
+          onUpdate: handleUpdateBackground,
+          onUploadImage: handleUploadBackgroundImage,
+          onRemoveImage: handleRemoveBackgroundImage,
+        }),
         h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf }),
         h("div", {
           class: "save-indicator",
@@ -474,6 +508,134 @@ function ExportMenu({ onExportPng, onExportPdf }) {
           h("div", { class: "export-hint" }, "所有頁面")
         )
       )
+    ),
+    open && h("div", { class: "export-backdrop", onClick: () => setOpen(false) })
+  );
+}
+
+// ── Background Picker ─────────────────────────────────────────────────────────
+
+const BG_TYPES = [
+  { type: "blank",  label: "空白" },
+  { type: "ruled",  label: "橫線" },
+  { type: "grid",   label: "方格" },
+  { type: "dot",    label: "點陣" },
+];
+
+function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
+  const [open, setOpen] = useState(false);
+  const fileInputRef = useRef(null);
+  const updateTimerRef = useRef(null);
+
+  const bg = page?.background ?? { type: "blank" };
+  const isImage = bg.type === "image";
+  const hasSliders = ["ruled", "grid", "dot"].includes(bg.type);
+
+  function setType(type) {
+    if (type === bg.type) return;
+    const base = { spacing: bg.spacing ?? 56, thickness: bg.thickness ?? 1, size: bg.size ?? 1.5 };
+    const next = type === "blank" ? { type: "blank" }
+      : type === "dot"   ? { type: "dot",   spacing: base.spacing, size: base.size }
+      : { type, spacing: base.spacing, thickness: base.thickness };
+    onUpdate(next);
+  }
+
+  function updateParam(key, value) {
+    clearTimeout(updateTimerRef.current);
+    const next = { ...bg, [key]: value };
+    onUpdate(next);
+  }
+
+  return h("div", { class: "bg-menu-wrap" },
+    h("button", {
+      class: ["icon-btn", open && "active"].filter(Boolean).join(" "),
+      title: "背景",
+      onClick: () => setOpen(!open),
+    },
+      h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+        h("rect", { x: 3, y: 3, width: 18, height: 18, rx: 2 }),
+        h("path", { d: "M3 9h18" }),
+        h("path", { d: "M9 21V9" })
+      )
+    ),
+    open && h("div", { class: "bg-dropdown" },
+
+      h("div", { class: "bg-section-label" }, "樣式"),
+      h("div", { class: "bg-type-row" },
+        BG_TYPES.map(({ type, label }) =>
+          h("button", {
+            key: type,
+            class: ["bg-type-btn", bg.type === type && "active"].filter(Boolean).join(" "),
+            onClick: () => setType(type),
+          }, label)
+        )
+      ),
+
+      hasSliders && h("div", { class: "bg-sliders" },
+        h("div", { class: "bg-slider-row" },
+          h("span", { class: "bg-slider-label" }, "間距"),
+          h("input", {
+            type: "range", min: 20, max: 100, step: 2,
+            value: bg.spacing ?? 56,
+            onInput: (e) => updateParam("spacing", +e.target.value),
+          }),
+          h("span", { class: "bg-slider-value" }, `${bg.spacing ?? 56}px`)
+        ),
+        bg.type === "dot"
+          ? h("div", { class: "bg-slider-row" },
+              h("span", { class: "bg-slider-label" }, "點大小"),
+              h("input", {
+                type: "range", min: 0.5, max: 4, step: 0.5,
+                value: bg.size ?? 1.5,
+                onInput: (e) => updateParam("size", +e.target.value),
+              }),
+              h("span", { class: "bg-slider-value" }, `${bg.size ?? 1.5}`)
+            )
+          : h("div", { class: "bg-slider-row" },
+              h("span", { class: "bg-slider-label" }, "粗細"),
+              h("input", {
+                type: "range", min: 0.5, max: 3, step: 0.5,
+                value: bg.thickness ?? 1,
+                onInput: (e) => updateParam("thickness", +e.target.value),
+              }),
+              h("span", { class: "bg-slider-value" }, `${bg.thickness ?? 1}px`)
+            )
+      ),
+
+      h("div", { class: "bg-divider" }),
+      h("div", { class: "bg-section-label" }, "背景圖片"),
+
+      isImage
+        ? h("div", { class: "bg-sliders" },
+            h("div", { class: "bg-slider-row" },
+              h("span", { class: "bg-slider-label" }, "縮放"),
+              h("input", {
+                type: "range", min: 20, max: 200, step: 5,
+                value: Math.round((bg.scale ?? 1) * 100),
+                onInput: (e) => updateParam("scale", +e.target.value / 100),
+              }),
+              h("span", { class: "bg-slider-value" }, `${Math.round((bg.scale ?? 1) * 100)}%`)
+            ),
+            h("button", {
+              class: "bg-remove-btn",
+              onClick: () => { onRemoveImage(); setOpen(false); },
+            }, "移除圖片")
+          )
+        : h("button", {
+            class: "bg-upload-btn",
+            onClick: () => fileInputRef.current?.click(),
+          }, "上傳圖片"),
+
+      h("input", {
+        ref: fileInputRef,
+        type: "file",
+        accept: "image/jpeg,image/png,image/gif,image/webp",
+        style: { display: "none" },
+        onChange: (e) => {
+          const file = e.target.files?.[0];
+          if (file) { onUploadImage(file); e.target.value = ""; setOpen(false); }
+        },
+      })
     ),
     open && h("div", { class: "export-backdrop", onClick: () => setOpen(false) })
   );

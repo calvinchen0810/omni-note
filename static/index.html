@@ -141,6 +141,44 @@
     .save-status-dot.saved  { background: #10b981; }
 
     /* ── Export menu ──────────────────────────────────────────────────────── */
+    /* ── Background picker ────────────────────────────────────────────────── */
+    .bg-menu-wrap { position: relative; }
+    .bg-dropdown {
+      position: absolute; right: 0; top: calc(100% + 6px);
+      background: #fff; border-radius: 14px; padding: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.14); z-index: 150;
+      min-width: 220px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .bg-section-label { font-size: 11px; font-weight: 600; color: #9ca3af; }
+    .bg-type-row { display: flex; gap: 4px; }
+    .bg-type-btn {
+      flex: 1; padding: 6px 4px; font-size: 12px; font-weight: 600;
+      border-radius: 8px; border: 1.5px solid #e5e7eb;
+      color: #374151; background: #f9fafb; transition: all .12s;
+    }
+    .bg-type-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+    .bg-type-btn.active { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+    .bg-sliders { display: flex; flex-direction: column; gap: 8px; }
+    .bg-slider-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .bg-slider-label { font-size: 11px; color: #6b7280; width: 40px; flex-shrink: 0; }
+    .bg-slider-row input[type=range] { flex: 1; }
+    .bg-slider-value { font-size: 11px; color: #374151; width: 36px; text-align: right; flex-shrink: 0; }
+    .bg-divider { height: 1px; background: #f3f4f6; margin: 2px 0; }
+    .bg-upload-btn {
+      width: 100%; padding: 8px; font-size: 13px; font-weight: 600;
+      border-radius: 8px; border: 1.5px dashed #d1d5db;
+      color: #4b5563; background: #f9fafb; transition: all .12s;
+    }
+    .bg-upload-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
+    .bg-remove-btn {
+      width: 100%; padding: 7px; font-size: 12px; font-weight: 600;
+      border-radius: 8px; color: #dc2626; background: #fff1f2;
+      border: 1px solid #fecdd3; transition: background .12s;
+    }
+    .bg-remove-btn:hover { background: #fee2e2; }
+
     .export-menu-wrap { position: relative; }
     .btn-export {
       background: #f3f4f6; color: #374151; border-radius: 8px;

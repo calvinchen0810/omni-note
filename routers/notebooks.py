@@ -5,8 +5,10 @@ from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from datetime import datetime
 
-from database import get_db
+from database import get_db, DATA_DIR
 from models import Notebook, Page
+
+BACKGROUNDS_DIR = DATA_DIR / "backgrounds"
 
 router = APIRouter()
 
@@ -114,10 +116,17 @@ async def update_notebook(
 
 @router.delete("/notebooks/{notebook_id}")
 async def delete_notebook(notebook_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Notebook).where(Notebook.id == notebook_id))
+    result = await db.execute(
+        select(Notebook).options(selectinload(Notebook.pages)).where(Notebook.id == notebook_id)
+    )
     nb = result.scalar_one_or_none()
     if not nb:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    # Clean up background image files for all pages
+    for page in nb.pages:
+        bg_file = BACKGROUNDS_DIR / str(page.id)
+        if bg_file.exists():
+            bg_file.unlink()
     await db.delete(nb)
     await db.commit()
     return {"ok": True}

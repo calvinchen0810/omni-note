@@ -1,18 +1,20 @@
 import os
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 from contextlib import asynccontextmanager
 
-from database import init_db
+from database import init_db, DATA_DIR
 from routers import notebooks, pages, sticky_notes
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+BACKGROUNDS_DIR = DATA_DIR / "backgrounds"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    BACKGROUNDS_DIR.mkdir(parents=True, exist_ok=True)
     await init_db()
     yield
 
@@ -22,6 +24,26 @@ app = FastAPI(title="OmniNote", lifespan=lifespan)
 app.include_router(notebooks.router, prefix="/api")
 app.include_router(pages.router, prefix="/api")
 app.include_router(sticky_notes.router, prefix="/api")
+
+@app.get("/backgrounds/{page_id}")
+async def get_background_image(page_id: int):
+    path = BACKGROUNDS_DIR / str(page_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="No background image")
+    # Read first 12 bytes to detect format
+    header = path.read_bytes()[:12]
+    if header[:4] == b"\x89PNG":
+        mime = "image/png"
+    elif header[:3] == b"\xff\xd8\xff":
+        mime = "image/jpeg"
+    elif header[:6] in (b"GIF87a", b"GIF89a"):
+        mime = "image/gif"
+    elif header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        mime = "image/webp"
+    else:
+        mime = "application/octet-stream"
+    return FileResponse(path, media_type=mime)
+
 
 @app.get("/health")
 def health():

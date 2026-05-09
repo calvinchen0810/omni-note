@@ -15,9 +15,10 @@ import {
 } from "../canvas-utils.js";
 
 export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
-  const baseRef    = useRef(null);
-  const overlayRef = useRef(null);
+  const baseRef      = useRef(null);
+  const overlayRef   = useRef(null);
   const containerRef = useRef(null);
+  const bgImageRef   = useRef(null);
 
   // Mutable drawing session — not React state (too high-frequency)
   const sess = useRef({
@@ -56,6 +57,25 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
     return () => ro.disconnect();
   }, []);
 
+  // ── Background image loader ───────────────────────────────────────────────
+
+  const currentBg = state.pages[state.currentPageIndex]?.background ?? { type: "blank" };
+  const bgKey = JSON.stringify(currentBg);
+
+  useEffect(() => {
+    const page = state.pages[state.currentPageIndex];
+    const bg = page?.background ?? { type: "blank" };
+    if (bg.type !== "image") {
+      bgImageRef.current = null;
+      redrawBase();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => { bgImageRef.current = img; redrawBase(); };
+    img.onerror = () => { bgImageRef.current = null; redrawBase(); };
+    img.src = `/backgrounds/${page.id}?t=${bg.ts ?? 0}`;
+  }, [bgKey, state.currentPageIndex]);
+
   // ── Redraw base canvas ────────────────────────────────────────────────────
 
   function redrawBase(overrideStrokes) {
@@ -63,8 +83,9 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawPageBackground(ctx, canvas.width, canvas.height);
     const page = state.pages[state.currentPageIndex];
+    const bg = page?.background ?? { type: "blank" };
+    drawPageBackground(ctx, canvas.width, canvas.height, bg, bgImageRef.current);
     renderAllStrokes(ctx, overrideStrokes ?? page?.strokes ?? []);
   }
 

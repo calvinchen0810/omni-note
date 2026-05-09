@@ -217,28 +217,58 @@ export function drawPenCursor(ctx, x, y, radius, color) {
   ctx.restore();
 }
 
-export function drawPageBackground(ctx, w, h) {
+export function drawPageBackground(ctx, w, h, bg = { type: "blank" }, bgImage = null) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
-  // Ruled lines
-  ctx.strokeStyle = "#e8eaf0";
-  ctx.lineWidth = 1;
-  const spacing = 36;
-  for (let y = spacing; y < h; y += spacing) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
+  const type = bg.type ?? "blank";
+
+  if (type === "image") {
+    if (bgImage) {
+      const scale = bg.scale ?? 1.0;
+      const fitScale = Math.min(w / bgImage.width, h / bgImage.height);
+      const dw = bgImage.width  * fitScale * scale;
+      const dh = bgImage.height * fitScale * scale;
+      ctx.drawImage(bgImage, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    }
+    return;
   }
 
-  // Margin line
-  ctx.strokeStyle = "#f5c6cb";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(64, 0);
-  ctx.lineTo(64, h);
-  ctx.stroke();
+  const spacing   = bg.spacing   ?? 56;
+  const thickness = bg.thickness ?? 1;
+
+  if (type === "ruled") {
+    ctx.strokeStyle = "#e8eaf0";
+    ctx.lineWidth = thickness;
+    for (let y = spacing; y < h; y += spacing) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    ctx.strokeStyle = "#f5c6cb";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(64, 0); ctx.lineTo(64, h); ctx.stroke();
+
+  } else if (type === "grid") {
+    ctx.strokeStyle = "#e8eaf0";
+    ctx.lineWidth = thickness;
+    for (let y = spacing; y < h; y += spacing) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    for (let x = spacing; x < w; x += spacing) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+
+  } else if (type === "dot") {
+    const dotSize = bg.size ?? 1.5;
+    ctx.fillStyle = "#c8ccd8";
+    for (let y = spacing; y < h; y += spacing) {
+      for (let x = spacing; x < w; x += spacing) {
+        ctx.beginPath();
+        ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  // "blank" = white only
 }
 
 // ─── Util ─────────────────────────────────────────────────────────────────────

@@ -209,6 +209,9 @@ export function reducer(state, action) {
       );
     }
 
+    case "UPDATE_PAGE_BACKGROUND":
+      return patchCurrentPage(state, { background: action.background });
+
     case "MARK_SAVED":
       return { ...state, isDirty: false };
 

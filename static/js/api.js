@@ -16,9 +16,25 @@ export const api = {
   deleteNotebook: (id) => req("DELETE", `/notebooks/${id}`),
 
   listPages: (notebookId) => req("GET", `/notebooks/${notebookId}/pages`),
-  createPage: (notebookId) => req("POST", `/notebooks/${notebookId}/pages`),
+  createPage: (notebookId, background) =>
+    req("POST", `/notebooks/${notebookId}/pages`, { background }),
   updateStrokes: (pageId, strokes) => req("PUT", `/pages/${pageId}/strokes`, { strokes }),
   deletePage: (pageId) => req("DELETE", `/pages/${pageId}`),
+
+  updateBackground: (pageId, bg) => req("PUT", `/pages/${pageId}/background`, bg),
+
+  uploadBackgroundImage: async (pageId, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE}/pages/${pageId}/background-image`, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) throw new Error(`POST background-image → ${res.status}`);
+    return res.json();
+  },
+
+  deleteBackgroundImage: (pageId) => req("DELETE", `/pages/${pageId}/background-image`),
 
   createStickyNote: (pageId, data) => req("POST", `/pages/${pageId}/sticky-notes`, data),
   updateStickyNote: (id, data) => req("PUT", `/sticky-notes/${id}`, data),

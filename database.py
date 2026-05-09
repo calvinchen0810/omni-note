@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import text
 
 APP_ROOT = Path(__file__).resolve().parent.parent   # apps/{name}/
 DATA_DIR = APP_ROOT / "data"
@@ -24,3 +25,10 @@ async def get_db():
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Migration: add background_json if missing
+        try:
+            await conn.execute(text(
+                "ALTER TABLE pages ADD COLUMN background_json TEXT NOT NULL DEFAULT '{\"type\":\"blank\"}'"
+            ))
+        except Exception:
+            pass  # column already exists
