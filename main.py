@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse, Response
 from contextlib import asynccontextmanager
 
 from database import init_db, DATA_DIR
-from routers import notebooks, pages, sticky_notes
+from routers import notebooks, pages, sticky_notes, cloud
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 BACKGROUNDS_DIR = DATA_DIR / "backgrounds"
@@ -24,6 +24,7 @@ app = FastAPI(title="OmniNote", lifespan=lifespan)
 app.include_router(notebooks.router, prefix="/api")
 app.include_router(pages.router, prefix="/api")
 app.include_router(sticky_notes.router, prefix="/api")
+app.include_router(cloud.router, prefix="/api")
 
 @app.get("/backgrounds/{page_id}")
 async def get_background_image(page_id: int):

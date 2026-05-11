@@ -1,7 +1,15 @@
+import secrets
+import string
+
 from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
+
+
+def _gen_cloud_id():
+    chars = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(chars) for _ in range(6))
 
 
 class Notebook(Base):
@@ -52,3 +60,14 @@ class StickyNote(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     page = relationship("Page", back_populates="sticky_notes")
+
+
+class CloudProject(Base):
+    __tablename__ = "cloud_projects"
+
+    id = Column(String(8), primary_key=True, default=_gen_cloud_id)
+    name = Column(String(255), nullable=False)
+    password_hash = Column(String(64), nullable=False)
+    data_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

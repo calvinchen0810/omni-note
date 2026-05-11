@@ -18,6 +18,9 @@ export const initialState = {
   undoStack: [],
   redoStack: [],
   isDirty: false,
+
+  // Cloud project currently open: { id, name, password, updatedAt } | null
+  cloudProject: null,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -66,7 +69,20 @@ export function reducer(state, action) {
       };
 
     case "BACK_TO_LIST":
-      return { ...state, view: "list", notebook: null, pages: [] };
+      return { ...state, view: "list", notebook: null, pages: [], cloudProject: null };
+
+    case "SET_CLOUD_PROJECT":
+      return { ...state, cloudProject: action.project };
+
+    case "OPEN_CLOUD_EDITOR":
+      return {
+        ...initialState,
+        view: "editor",
+        notebook: { id: null, title: action.name },
+        pages: action.pages,
+        cloudProject: action.cloudProject,
+        isDirty: false,
+      };
 
     case "UPDATE_NOTEBOOK_TITLE":
       return { ...state, notebook: { ...state.notebook, title: action.title } };
