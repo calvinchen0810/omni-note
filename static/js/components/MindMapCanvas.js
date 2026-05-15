@@ -290,10 +290,16 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
 
   const onOverlayMove = useCallback((e) => {
     if (e.pointerType === "touch" && !e.isPrimary) return;
-    const t = state.currentTool, p = pos(e);
-    if (t === "pen" || t === "highlighter") penMove(p);
-    else if (t === "eraser") eraserMove(p);
-    else if (t === "select") lassoMove(p);
+    const t = state.currentTool;
+    // Use coalesced events to capture all intermediate stylus positions that
+    // the browser batched between frames — prevents broken/jagged lines.
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of evs) {
+      const p = pos(ev);
+      if (t === "pen" || t === "highlighter") penMove(p);
+      else if (t === "eraser") eraserMove(p);
+      else if (t === "select") lassoMove(p);
+    }
   }, [state]);
 
   const onOverlayUp = useCallback((e) => {
@@ -559,6 +565,8 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
       onPointerUp:    onOverlayUp,
       onPointerCancel: onOverlayUp,
       onPointerLeave: () => {
+        // Never clear the live stroke preview while actively drawing.
+        if (sess.current.drawing || sess.current.erasing || sess.current.lasso || sess.current.dragging) return;
         if (state.currentTool === "eraser") eraserLeave();
         else overlayRef.current?.getContext("2d")?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
       },
