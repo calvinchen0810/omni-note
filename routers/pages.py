@@ -55,6 +55,12 @@ class BackgroundUpdate(BaseModel):
 
 class PageCreate(BaseModel):
     background: dict | None = None
+    page_type: str = "handwriting"
+
+
+class MindmapUpdate(BaseModel):
+    nodes: list
+    connections: list
 
 
 class StickyNoteOut(BaseModel):
@@ -78,6 +84,8 @@ class PageOut(BaseModel):
     strokes: list
     sticky_notes: list[StickyNoteOut]
     background: dict
+    page_type: str
+    mindmap: dict
     created_at: datetime
     updated_at: datetime
 
@@ -90,6 +98,8 @@ def _page_out(p: Page) -> PageOut:
         strokes=json.loads(p.strokes_json),
         sticky_notes=[StickyNoteOut.model_validate(sn) for sn in p.sticky_notes],
         background=json.loads(p.background_json or '{"type":"blank"}'),
+        page_type=p.page_type or "handwriting",
+        mindmap=json.loads(p.mindmap_json or '{"nodes":[],"connections":[]}'),
         created_at=p.created_at,
         updated_at=p.updated_at,
     )
@@ -138,6 +148,7 @@ async def create_page(
         notebook_id=notebook_id,
         page_index=next_index,
         background_json=json.dumps(bg),
+        page_type=body.page_type or "handwriting",
     )
     db.add(page)
     await db.commit()
@@ -214,6 +225,19 @@ async def delete_background_image(
     page.updated_at = datetime.utcnow()
     await db.commit()
     return {"background": {"type": "blank"}}
+
+
+# ── Update mindmap ────────────────────────────────────────────────────────────
+
+@router.put("/pages/{page_id}/mindmap")
+async def update_mindmap(
+    page_id: int, body: MindmapUpdate, db: AsyncSession = Depends(get_db)
+):
+    page = await _get_page(page_id, db)
+    page.mindmap_json = json.dumps({"nodes": body.nodes, "connections": body.connections})
+    page.updated_at = datetime.utcnow()
+    await db.commit()
+    return {"ok": True}
 
 
 # ── Delete page ───────────────────────────────────────────────────────────────

@@ -36,6 +36,8 @@ class Page(Base):
     page_index = Column(Integer, nullable=False, default=0)
     strokes_json = Column(Text, nullable=False, default="[]")
     background_json = Column(Text, nullable=False, default='{"type":"blank"}')
+    page_type = Column(String(20), nullable=False, default="handwriting")
+    mindmap_json = Column(Text, nullable=False, default='{"nodes":[],"connections":[]}')
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

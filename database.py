@@ -31,4 +31,16 @@ async def init_db():
                 "ALTER TABLE pages ADD COLUMN background_json TEXT NOT NULL DEFAULT '{\"type\":\"blank\"}'"
             ))
         except Exception:
-            pass  # column already exists
+            pass
+        try:
+            await conn.execute(text(
+                "ALTER TABLE pages ADD COLUMN page_type TEXT NOT NULL DEFAULT 'handwriting'"
+            ))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text(
+                "ALTER TABLE pages ADD COLUMN mindmap_json TEXT NOT NULL DEFAULT '{\"nodes\":[],\"connections\":[]}'"
+            ))
+        except Exception:
+            pass

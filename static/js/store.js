@@ -32,7 +32,11 @@ function currentPage(state) {
 function snapshotPage(state) {
   const page = currentPage(state);
   if (!page) return null;
-  return { strokes: page.strokes, sticky_notes: page.sticky_notes ?? [] };
+  return {
+    strokes: page.strokes,
+    sticky_notes: page.sticky_notes ?? [],
+    mindmap: page.mindmap ?? { nodes: [], connections: [] },
+  };
 }
 
 function withUndo(state) {
@@ -89,15 +93,21 @@ export function reducer(state, action) {
 
     // ── Pages ─────────────────────────────────────────────────────────────────
 
-    case "SET_PAGE_INDEX":
+    case "SET_PAGE_INDEX": {
+      const targetPage = state.pages[action.index];
+      const keepTool = targetPage?.page_type === "mindmap" ? "mindmap"
+        : state.currentTool === "mindmap" ? "pen"
+        : state.currentTool;
       return {
         ...state,
         currentPageIndex: action.index,
+        currentTool: keepTool,
         lassoPath: [],
         selectedStrokeIds: [],
         undoStack: [],
         redoStack: [],
       };
+    }
 
     case "ADD_PAGE":
       return {
@@ -223,6 +233,11 @@ export function reducer(state, action) {
         },
         next
       );
+    }
+
+    case "UPDATE_MINDMAP": {
+      const s0 = action.pushUndo ? withUndo(state) : { ...state, isDirty: true };
+      return patchCurrentPage(s0, { mindmap: action.mindmap });
     }
 
     case "UPDATE_PAGE_BACKGROUND":

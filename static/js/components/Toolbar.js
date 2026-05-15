@@ -16,7 +16,7 @@ function Divider() {
   return h("div", { class: "tool-divider" });
 }
 
-export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
+export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, pageType }) {
   const [showEraserMenu, setShowEraserMenu] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPalettePos, setColorPalettePos] = useState(null);
@@ -266,6 +266,26 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo }) {
         h("path", { d: "M14 2v6h6" }),
         h("line", { x1: 8, y1: 13, x2: 16, y2: 13 }),
         h("line", { x1: 8, y1: 17, x2: 12, y2: 17 })
+      )
+    ),
+
+    // ── Mindmap tool (only on mindmap pages) ─────────────────────────────────
+    pageType === "mindmap" && h(Divider),
+    pageType === "mindmap" && h(ToolBtn, {
+      active: tool === "mindmap",
+      title: "心智圖工具 (M)",
+      onClick: () => setTool("mindmap"),
+    },
+      h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+        h("circle", { cx: 12, cy: 12, r: 3 }),
+        h("circle", { cx: 3,  cy: 5,  r: 2 }),
+        h("circle", { cx: 21, cy: 5,  r: 2 }),
+        h("circle", { cx: 3,  cy: 19, r: 2 }),
+        h("circle", { cx: 21, cy: 19, r: 2 }),
+        h("line",   { x1: 9,  y1: 10, x2: 5,  y2: 7  }),
+        h("line",   { x1: 15, y1: 10, x2: 19, y2: 7  }),
+        h("line",   { x1: 9,  y1: 14, x2: 5,  y2: 17 }),
+        h("line",   { x1: 15, y1: 14, x2: 19, y2: 17 })
       )
     ),
 

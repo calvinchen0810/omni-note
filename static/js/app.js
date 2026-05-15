@@ -6,7 +6,8 @@ import { api } from "./api.js";
 import { uid, renderAllStrokes, drawPageBackground } from "./canvas-utils.js";
 
 import { NotebookList } from "./components/NotebookList.js";
-import { Canvas }       from "./components/Canvas.js";
+import { Canvas }          from "./components/Canvas.js";
+import { MindMapCanvas }   from "./components/MindMapCanvas.js";
 import { Toolbar }      from "./components/Toolbar.js";
 import { PageTabs }     from "./components/PageTabs.js";
 import { StickyNote }   from "./components/StickyNote.js";
@@ -93,6 +94,7 @@ function App() {
         if (e.key === "e") dispatch({ type: "SET_TOOL", tool: "eraser" });
         if (e.key === "s") dispatch({ type: "SET_TOOL", tool: "select" });
         if (e.key === "n") handleAddStickyNote();
+        if (e.key === "m" && currentPage?.page_type === "mindmap") dispatch({ type: "SET_TOOL", tool: "mindmap" });
       }
     }
     window.addEventListener("keydown", onKey);
@@ -111,10 +113,17 @@ function App() {
     const page = state.pages[state.currentPageIndex];
     if (!page) return;
     try {
-      await api.updateStrokes(page.id, page.strokes ?? []);
+      if (page.page_type === "mindmap") {
+        await Promise.all([
+          api.updateStrokes(page.id, page.strokes ?? []),
+          api.updateMindmap(page.id, page.mindmap ?? { nodes: [], connections: [] }),
+        ]);
+      } else {
+        await api.updateStrokes(page.id, page.strokes ?? []);
+      }
       dispatch({ type: "MARK_SAVED" });
     } catch (e) {
-      console.error("save strokes:", e);
+      console.error("save page:", e);
     }
   }
 
@@ -124,6 +133,10 @@ function App() {
     try {
       const pages = await api.listPages(nb.id);
       dispatch({ type: "OPEN_EDITOR", notebook: nb, pages });
+      // auto-select mindmap tool if first page is mindmap
+      if (pages[0]?.page_type === "mindmap") {
+        dispatch({ type: "SET_TOOL", tool: "mindmap" });
+      }
     } catch (e) {
       console.error("openNotebook:", e);
     }
@@ -160,16 +173,16 @@ function App() {
 
   // ── Page actions ──────────────────────────────────────────────────────────
 
-  async function handleAddPage() {
+  async function handleAddPage(pageType = "handwriting") {
     const currentBg = state.pages[state.currentPageIndex]?.background;
     const bg = currentBg?.type === "image" ? { type: "blank" } : (currentBg ?? { type: "blank" });
     if (state.cloudProject) {
-      dispatch({ type: "ADD_PAGE", page: { id: `tmp-${Date.now()}`, page_index: state.pages.length, strokes: [], sticky_notes: [], background: bg } });
+      dispatch({ type: "ADD_PAGE", page: { id: `tmp-${Date.now()}`, page_index: state.pages.length, strokes: [], sticky_notes: [], background: bg, page_type: pageType, mindmap: { nodes: [], connections: [] } } });
       return;
     }
     if (!state.notebook) return;
     try {
-      const page = await api.createPage(state.notebook.id, bg);
+      const page = await api.createPage(state.notebook.id, bg, pageType);
       dispatch({ type: "ADD_PAGE", page });
     } catch (e) {
       console.error("addPage:", e);
@@ -433,6 +446,7 @@ function App() {
           onAddStickyNote: handleAddStickyNote,
           onUndo: handleUndo,
           onRedo: handleRedo,
+          pageType: currentPage?.page_type ?? "handwriting",
         })
       ),
       h("div", { class: "top-bar-actions" },
@@ -488,13 +502,21 @@ function App() {
                 transform: `scale(${zoom})`,
               },
             },
-              h(Canvas, {
-                state,
-                dispatch,
-                onSave: scheduleSave,
-                pageWidth: PAGE_WIDTH,
-                pageHeight: PAGE_HEIGHT,
-              }),
+              currentPage?.page_type === "mindmap"
+                ? h(MindMapCanvas, {
+                    state,
+                    dispatch,
+                    onSave: scheduleSave,
+                    pageWidth: PAGE_WIDTH,
+                    pageHeight: PAGE_HEIGHT,
+                  })
+                : h(Canvas, {
+                    state,
+                    dispatch,
+                    onSave: scheduleSave,
+                    pageWidth: PAGE_WIDTH,
+                    pageHeight: PAGE_HEIGHT,
+                  }),
               currentPage && (currentPage.sticky_notes ?? []).map((note) =>
                 h(StickyNote, {
                   key: note.id,

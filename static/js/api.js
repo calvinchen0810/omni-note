@@ -16,9 +16,10 @@ export const api = {
   deleteNotebook: (id) => req("DELETE", `/notebooks/${id}`),
 
   listPages: (notebookId) => req("GET", `/notebooks/${notebookId}/pages`),
-  createPage: (notebookId, background) =>
-    req("POST", `/notebooks/${notebookId}/pages`, { background }),
+  createPage: (notebookId, background, page_type = "handwriting") =>
+    req("POST", `/notebooks/${notebookId}/pages`, { background, page_type }),
   updateStrokes: (pageId, strokes) => req("PUT", `/pages/${pageId}/strokes`, { strokes }),
+  updateMindmap: (pageId, mindmap) => req("PUT", `/pages/${pageId}/mindmap`, mindmap),
   deletePage: (pageId) => req("DELETE", `/pages/${pageId}`),
 
   updateBackground: (pageId, bg) => req("PUT", `/pages/${pageId}/background`, bg),

@@ -1,4 +1,5 @@
 import { renderAllStrokes, drawPageBackground } from "./canvas-utils.js";
+import { renderMindmapToCanvas } from "./components/MindMapCanvas.js";
 
 // ── Canvas rendering ──────────────────────────────────────────────────────────
 
@@ -34,6 +35,11 @@ async function renderPageToOffscreen(page, width, height, withBg = true, fallbac
   } else if (fallbackWhite) {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
+  }
+
+  // For mindmap pages: render nodes + connections below strokes
+  if (page.page_type === "mindmap" && page.mindmap) {
+    renderMindmapToCanvas(ctx, page.mindmap);
   }
 
   renderAllStrokes(ctx, page.strokes ?? []);
