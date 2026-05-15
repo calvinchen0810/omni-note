@@ -524,10 +524,17 @@
 
     /* ── Page tabs ────────────────────────────────────────────────────────── */
     .page-tabs {
-      display: flex; align-items: center; gap: 2px;
+      display: flex; align-items: center;
       padding: 0 12px; height: 44px; background: #fff;
-      border-top: 1px solid #e5e7eb; overflow-x: auto;
-      flex-shrink: 0;
+      border-top: 1px solid #e5e7eb; flex-shrink: 0;
+      overflow: visible;
+    }
+    .page-tabs-scroll {
+      display: flex; align-items: center; gap: 2px;
+      overflow-x: auto; flex: 1;
+    }
+    .page-tabs-add-wrap {
+      position: relative; flex-shrink: 0;
     }
     .page-tab {
       display: flex; align-items: center; gap: 4px;

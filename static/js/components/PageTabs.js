@@ -7,7 +7,6 @@ export function PageTabs({ state, dispatch, onAddPage, onDeletePage }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const addBtnRef = useRef(null);
 
-  // Close popup on outside click
   useEffect(() => {
     if (!showAddMenu) return;
     function handler(e) {
@@ -23,30 +22,34 @@ export function PageTabs({ state, dispatch, onAddPage, onDeletePage }) {
   }
 
   return h("div", { class: "page-tabs" },
-    state.pages.map((page, i) =>
-      h("div", {
-        key: page.id,
-        class: ["page-tab", i === state.currentPageIndex && "active"].filter(Boolean).join(" "),
-        onClick: () => dispatch({ type: "SET_PAGE_INDEX", index: i }),
-      },
-        h("span", { class: "page-tab-icon" }, TYPE_ICON[page.page_type ?? "handwriting"] ?? "✏️"),
-        h("span", null, `第 ${i + 1} 頁`),
-        state.pages.length > 1 && i === state.currentPageIndex &&
-          h("button", {
-            class: "tab-delete",
-            title: "刪除此頁",
-            onClick: (e) => {
-              e.stopPropagation();
-              if (confirm(`確定要刪除第 ${i + 1} 頁？此操作無法復原。`)) {
-                onDeletePage?.(page.id);
-              }
-            },
-          }, "×")
+
+    // Scrollable tabs area
+    h("div", { class: "page-tabs-scroll" },
+      state.pages.map((page, i) =>
+        h("div", {
+          key: page.id,
+          class: ["page-tab", i === state.currentPageIndex && "active"].filter(Boolean).join(" "),
+          onClick: () => dispatch({ type: "SET_PAGE_INDEX", index: i }),
+        },
+          h("span", { class: "page-tab-icon" }, TYPE_ICON[page.page_type ?? "handwriting"] ?? "✏️"),
+          h("span", null, `第 ${i + 1} 頁`),
+          state.pages.length > 1 && i === state.currentPageIndex &&
+            h("button", {
+              class: "tab-delete",
+              title: "刪除此頁",
+              onClick: (e) => {
+                e.stopPropagation();
+                if (confirm(`確定要刪除第 ${i + 1} 頁？此操作無法復原。`)) {
+                  onDeletePage?.(page.id);
+                }
+              },
+            }, "×")
+        )
       )
     ),
 
-    // Add page button + popup
-    h("div", { ref: addBtnRef, style: { position: "relative" } },
+    // Add button — outside scroll area so popup is never clipped
+    h("div", { ref: addBtnRef, class: "page-tabs-add-wrap" },
       h("button", {
         class: "page-tab add-tab",
         title: "新增頁面",
