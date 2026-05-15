@@ -1,20 +1,10 @@
 import { h } from "https://esm.sh/preact@10.19.3";
-import { useState, useRef, useEffect } from "https://esm.sh/preact@10.19.3/hooks";
+import { useState } from "https://esm.sh/preact@10.19.3/hooks";
 
 const TYPE_ICON = { handwriting: "✏️", mindmap: "🧠" };
 
 export function PageTabs({ state, dispatch, onAddPage, onDeletePage }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const addBtnRef = useRef(null);
-
-  useEffect(() => {
-    if (!showAddMenu) return;
-    function handler(e) {
-      if (!addBtnRef.current?.contains(e.target)) setShowAddMenu(false);
-    }
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [showAddMenu]);
 
   function addPage(type) {
     setShowAddMenu(false);
@@ -48,13 +38,14 @@ export function PageTabs({ state, dispatch, onAddPage, onDeletePage }) {
       )
     ),
 
-    // Add button — outside scroll area so popup is never clipped
-    h("div", { ref: addBtnRef, class: "page-tabs-add-wrap" },
+    // Add button + popup (outside scroll area so popup is never clipped)
+    h("div", { class: "page-tabs-add-wrap" },
       h("button", {
         class: "page-tab add-tab",
         title: "新增頁面",
         onClick: () => setShowAddMenu((v) => !v),
       }, "+"),
+
       showAddMenu && h("div", { class: "add-page-menu" },
         h("button", { class: "add-page-item", onClick: () => addPage("handwriting") },
           h("span", { class: "add-page-icon" }, "✏️"),
@@ -64,7 +55,13 @@ export function PageTabs({ state, dispatch, onAddPage, onDeletePage }) {
           h("span", { class: "add-page-icon" }, "🧠"),
           h("span", null, "心智圖")
         )
-      )
+      ),
+
+      // Backdrop — closes menu when clicking anywhere outside
+      showAddMenu && h("div", {
+        style: { position: "fixed", inset: 0, zIndex: 149 },
+        onClick: () => setShowAddMenu(false),
+      })
     )
   );
 }
