@@ -269,11 +269,11 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
       )
     ),
 
-    // ── Mindmap tool (only on mindmap pages) ─────────────────────────────────
-    pageType === "mindmap" && h(Divider),
-    pageType === "mindmap" && h(ToolBtn, {
+    // ── Mindmap tool ──────────────────────────────────────────────────────────
+    h(Divider),
+    h(ToolBtn, {
       active: tool === "mindmap",
-      title: "心智圖工具 (M)",
+      title: "心智圖工具",
       onClick: () => setTool("mindmap"),
     },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },

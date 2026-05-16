@@ -37,8 +37,8 @@ async function renderPageToOffscreen(page, width, height, withBg = true, fallbac
     ctx.fillRect(0, 0, width, height);
   }
 
-  // For mindmap pages: render nodes + connections below strokes
-  if (page.page_type === "mindmap" && page.mindmap) {
+  // Render mindmap nodes + connections below strokes
+  if (page.mindmap?.nodes?.length) {
     renderMindmapToCanvas(ctx, page.mindmap);
   }
 

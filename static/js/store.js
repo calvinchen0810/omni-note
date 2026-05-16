@@ -79,21 +79,15 @@ export function reducer(state, action) {
 
     // ── Pages ─────────────────────────────────────────────────────────────────
 
-    case "SET_PAGE_INDEX": {
-      const targetPage = state.pages[action.index];
-      const keepTool = targetPage?.page_type === "mindmap" ? "mindmap"
-        : state.currentTool === "mindmap" ? "pen"
-        : state.currentTool;
+    case "SET_PAGE_INDEX":
       return {
         ...state,
         currentPageIndex: action.index,
-        currentTool: keepTool,
         lassoPath: [],
         selectedStrokeIds: [],
         undoStack: [],
         redoStack: [],
       };
-    }
 
     case "ADD_PAGE":
       return {
