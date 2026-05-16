@@ -501,13 +501,12 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
           onPointerDown: isMindmapTool ? (e) => { e.stopPropagation(); setSelectedId(conn.id); } : undefined,
         });
       }),
-      // Temporary connection line
-      connecting && tempCursor && h("line", {
-        x1: connecting.x, y1: connecting.y,
-        x2: tempCursor.x, y2: tempCursor.y,
-        stroke: "#6366f1", "stroke-width": 1.5, "stroke-dasharray": "4 2",
-        "pointer-events": "none",
-      })
+      // Temporary connection bezier (mirrors source direction for target approach)
+      connecting && tempCursor && (() => {
+        const [sdx, sdy] = PORT_DIRS[connecting.port] ?? [0, 0];
+        const d = `M ${connecting.x} ${connecting.y} C ${connecting.x+sdx} ${connecting.y+sdy} ${tempCursor.x-sdx} ${tempCursor.y-sdy} ${tempCursor.x} ${tempCursor.y}`;
+        return h("path", { d, fill: "none", stroke: "#6366f1", "stroke-width": 1.5, "stroke-dasharray": "4 2", "pointer-events": "none" });
+      })()
     ),
 
     // Layer 3: node divs
