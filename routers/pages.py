@@ -159,8 +159,20 @@ async def create_page(
     db.add(page)
     await db.commit()
     await db.refresh(page)
-    page.sticky_notes = []
-    return _page_out(page)
+    # Newly-created page always has empty sticky_notes — avoid lazy-load on async session
+    return PageOut(
+        id=page.id,
+        notebook_id=page.notebook_id,
+        page_index=page.page_index,
+        title=page.title,
+        strokes=[],
+        sticky_notes=[],
+        background=json.loads(page.background_json or '{"type":"blank"}'),
+        page_type=page.page_type or "handwriting",
+        mindmap=json.loads(page.mindmap_json or '{"nodes":[],"connections":[]}'),
+        created_at=page.created_at,
+        updated_at=page.updated_at,
+    )
 
 
 # ── Update strokes ────────────────────────────────────────────────────────────
