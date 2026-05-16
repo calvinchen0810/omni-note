@@ -41,11 +41,4 @@ export const api = {
   createStickyNote: (pageId, data) => req("POST", `/pages/${pageId}/sticky-notes`, data),
   updateStickyNote: (id, data) => req("PUT", `/sticky-notes/${id}`, data),
   deleteStickyNote: (id) => req("DELETE", `/sticky-notes/${id}`),
-
-  cloudSave: (id, name, password, data) =>
-    req("POST", "/cloud/save", { id, name, password, data }),
-  cloudOpen: (id, password) =>
-    req("POST", "/cloud/open", { id, password }),
-  cloudMeta: (id, password) =>
-    req("POST", "/cloud/meta", { id, password }),
 };
