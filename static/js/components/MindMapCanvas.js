@@ -509,6 +509,7 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
             width: `${node.width ?? NODE_W}px`,
             background: c.bg, borderColor: c.border, color: c.text,
             pointerEvents: nodePE,
+            touchAction: "none",
             zIndex: sel ? 3 : 2,
           },
           onPointerDown: (e) => { if (!edit) onNodeDown(e, node); },

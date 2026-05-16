@@ -176,16 +176,18 @@ function App() {
   async function handleAddPage(pageType = "handwriting") {
     const currentBg = state.pages[state.currentPageIndex]?.background;
     const bg = currentBg?.type === "image" ? { type: "blank" } : (currentBg ?? { type: "blank" });
-    if (state.cloudProject) {
-      dispatch({ type: "ADD_PAGE", page: { id: `tmp-${Date.now()}`, page_index: state.pages.length, strokes: [], sticky_notes: [], background: bg, page_type: pageType, mindmap: { nodes: [], connections: [] } } });
-      return;
-    }
+    const tempId = `tmp-${Date.now()}`;
+    const tempPage = { id: tempId, page_index: state.pages.length, strokes: [], sticky_notes: [], background: bg, page_type: pageType, mindmap: { nodes: [], connections: [] } };
+    // Optimistic: show the tab immediately before the API responds
+    dispatch({ type: "ADD_PAGE", page: tempPage });
+    if (state.cloudProject) return;
     if (!state.notebook) return;
     try {
       const page = await api.createPage(state.notebook.id, bg, pageType);
-      dispatch({ type: "ADD_PAGE", page });
+      dispatch({ type: "REPLACE_PAGE", tempId, page });
     } catch (e) {
       console.error("addPage:", e);
+      dispatch({ type: "DELETE_PAGE", pageId: tempId });
     }
   }
 
@@ -479,7 +481,7 @@ function App() {
       h("div", {
         class: ["canvas-wrapper", state.currentTool === "pan" && "is-pan-mode"].filter(Boolean).join(" "),
         ref: canvasViewportRef,
-        style: { touchAction: state.currentTool === "pan" ? "none" : "auto" },
+        style: { touchAction: (state.currentTool === "pan" || currentPage?.page_type === "mindmap") ? "none" : "auto" },
         onPointerDown: onViewportPointerDown,
         onPointerMove: onViewportPointerMove,
         onPointerUp: onViewportPointerUp,

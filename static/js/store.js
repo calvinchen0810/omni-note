@@ -129,6 +129,12 @@ export function reducer(state, action) {
       };
     }
 
+    case "REPLACE_PAGE":
+      return {
+        ...state,
+        pages: state.pages.map((p) => p.id === action.tempId ? action.page : p),
+      };
+
     // ── Tools ─────────────────────────────────────────────────────────────────
 
     case "SET_TOOL":
