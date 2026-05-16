@@ -2,7 +2,7 @@
 
 以平板電腦 + 手寫筆為主的全功能筆記應用程式，支援 PWA 離線使用。
 
-**技術棧**：FastAPI · Uvicorn · SQLite · Preact + htm（無需 build）
+**技術棧**：FastAPI · Uvicorn · PostgreSQL (asyncpg) · Preact 10（無需 build step）
 
 ---
 
@@ -10,15 +10,19 @@
 
 | 功能 | 說明 |
 |------|------|
-| 手寫輸入 | Pointer Events API，支援筆壓感應，貝茲曲線平滑筆跡 |
+| 手寫輸入 | Pointer Events API，支援筆壓感應，貝茲曲線平滑筆跡，`getCoalescedEvents()` 補全高頻觸控點 |
 | 螢光筆 | `multiply` 混合模式，半透明疊色效果 |
-| 橡皮擦 | **精確模式**（逐點切除筆劃）/ **整筆模式**（整條刪除），工具列一鍵切換 |
+| 橡皮擦 | **精確模式**（逐點切除筆劃）／**整筆模式**（整條刪除），工具列一鍵切換 |
 | 筆觸粗細 | 顏色按鈕旁的粗細按鈕，點擊後彈出拉桿即時調整；橡皮擦亦支援大小調整 |
-| 復原 / 重做 | Command Pattern，無限層次 Undo / Redo |
-| 套索選取 | 自由繪製選取區，Ray Casting 演算法，可拖曳移動選取筆跡 |
-| 便利貼 | 可拖曳、縮放、換色、inline 編輯 |
-| 分頁 | 底部分頁列，可新增 / 刪除頁面 |
-| 自動儲存 | 停筆 800ms 後自動 PUT 到後端，頂部顯示儲存狀態 |
+| 套索選取 | 自由繪製選取區（Ray Casting 演算法），可拖曳移動選取筆跡 |
+| 便利貼 | 可拖曳、縮放、換色、inline 富文字編輯 |
+| 心智圖 | 雙擊空白新增節點、拖曳節點連線、貝茲弧線連接、節點顏色、刪除；心智圖與手寫可疊加 |
+| 背景樣式 | 橫線 / 方格 / 點陣 / 空白，可自訂間距與線條粗細；支援上傳圖片當背景 |
+| 縮放 | 頂欄縮放拉桿（10%–200%），支援平移（Pan 模式） |
+| 多頁管理 | 底部分頁列，可新增手寫頁或心智圖頁；雙擊分頁標籤重新命名；可刪除頁面 |
+| 自動儲存 | 停筆 800ms 後自動 PUT 到後端，頂部圓點顯示儲存狀態（橘＝未存，綠＝已存） |
+| 雲端協作 | 以 6 位 ID + 密碼建立雲端專案；15 秒自動同步，衝突時彈出三向比較 |
+| 匯出 | 匯出當前頁為 PNG，或匯出全本為 PDF |
 | PWA | Service Worker cache-first，可加入主畫面離線使用 |
 
 ---
@@ -26,41 +30,67 @@
 ## 專案結構
 
 ```
-omni-note/                   ← AppCarrier src/ 目錄
-├── main.py                  ← FastAPI 入口（uvicorn main:app）
-├── database.py              ← SQLAlchemy async，DB 路徑從 __file__ 推導
-├── models.py                ← Notebook / Page / StickyNote ORM 模型
+omni-note/
+├── main.py                  ← FastAPI 入口、背景圖片路由、靜態檔案掛載
+├── database.py              ← SQLAlchemy async engine（PostgreSQL/asyncpg）
+├── models.py                ← ORM 模型：Notebook / Page / StickyNote / CloudProject
 ├── requirements.txt
 ├── routers/
 │   ├── notebooks.py         ← CRUD /api/notebooks
-│   ├── pages.py             ← CRUD /api/pages，筆跡更新
-│   └── sticky_notes.py      ← CRUD /api/sticky-notes
+│   ├── pages.py             ← CRUD /api/pages，筆跡、背景、心智圖、頁面標題
+│   ├── sticky_notes.py      ← CRUD /api/sticky-notes
+│   └── cloud.py             ← /api/cloud/save、open、meta（雲端協作）
 └── static/
     ├── index.html           ← SPA 入口，內嵌所有 CSS
     ├── manifest.json        ← PWA manifest
-    ├── sw.js                ← Service Worker
-    ├── icons/
+    ├── sw.js                ← Service Worker（cache-first）
     └── js/
-        ├── app.js           ← 主 App 元件，鍵盤快捷鍵，auto-save
-        ├── store.js         ← useReducer 狀態管理，Undo/Redo
-        ├── api.js           ← REST 客戶端（相對路徑）
-        ├── canvas-utils.js  ← 筆跡渲染、橡皮擦、套索算法
+        ├── app.js           ← 主 App 元件、鍵盤快捷鍵、auto-save、雲端同步 UI
+        ├── store.js         ← useReducer 狀態管理、Undo/Redo
+        ├── api.js           ← REST 客戶端（相對路徑，無 hardcode host）
+        ├── canvas-utils.js  ← 筆跡渲染、橡皮擦、套索、背景繪製
+        ├── export-utils.js  ← PNG / PDF 匯出（離屏 canvas）
         └── components/
-            ├── Canvas.js        ← 雙 canvas 架構（base + overlay）
-            ├── Toolbar.js       ← 工具列
-            ├── PageTabs.js      ← 底部分頁
-            ├── StickyNote.js    ← 便利貼元件
+            ├── Canvas.js        ← 手寫頁：雙 canvas 架構（base + overlay）
+            ├── MindMapCanvas.js ← 心智圖頁：5 層架構（bg / SVG / nodes / stroke / overlay）
+            ├── Toolbar.js       ← 工具列（筆、螢光筆、橡皮擦、套索、平移、心智圖、便利貼）
+            ├── PageTabs.js      ← 底部分頁列（新增、刪除、重新命名）
+            ├── StickyNote.js    ← 便利貼元件（拖曳、縮放、顏色、編輯）
             └── NotebookList.js  ← 筆記本列表
 ```
 
-### 資料流
+---
+
+## 資料流
+
+### 手寫筆跡
 
 ```
 使用者繪圖
-  → Pointer Events → Canvas.js（overlay canvas 即時預覽）
-  → pointerup → dispatch ADD_STROKE → store.js reducer
-  → patchCurrentPage → Preact re-render → base canvas 重繪
-  → scheduleSave（debounce 800ms）→ api.updateStrokes → PUT /api/pages/:id/strokes
+  → Pointer Events (getCoalescedEvents) → Canvas.js overlay canvas 即時預覽
+  → pointerup → dispatch ADD_STROKE → store.js reducer → patchCurrentPage
+  → Preact re-render → base canvas 重繪
+  → scheduleSave (debounce 800ms) → api.updateStrokes → PUT /api/pages/:id/strokes
+```
+
+### 心智圖
+
+```
+雙擊空白處 → onSvgDblClick → 新增節點 → dispatch UPDATE_MINDMAP
+拖曳 Port 圓點 → startConnect → onPortMove (tempCursor) → SVG 貝茲曲線預覽
+  → pointerup on target Port → 建立連線 → dispatch UPDATE_MINDMAP
+  → api.updateMindmap → PUT /api/pages/:id/mindmap
+```
+
+### 雲端同步
+
+```
+儲存 → api.cloudSave → POST /api/cloud/save（建立或更新 CloudProject）
+開啟 → api.cloudOpen → POST /api/cloud/open（驗證密碼，回傳 data_json）
+自動同步（每 15 秒）→ api.cloudMeta 比較 updated_at
+  → 若雲端較新：拉取最新資料
+  → 若本地較新：推送本地資料
+  → 若衝突（同時修改）：彈出 ConflictModal 三向比較
 ```
 
 ---
@@ -68,44 +98,119 @@ omni-note/                   ← AppCarrier src/ 目錄
 ## 資料庫結構
 
 ```
-Notebook          Page                  StickyNote
-─────────         ──────────────        ──────────────────
-id                id                    id
-title             notebook_id (FK)      page_id (FK)
-created_at        page_index            x, y, width, height
-updated_at        strokes_json (TEXT)   content
-                  created_at            color
-                  updated_at            created_at / updated_at
+Notebook                Page                        StickyNote
+────────────            ────────────────────────    ──────────────────────
+id (PK)                 id (PK)                     id (PK)
+title                   notebook_id (FK)            page_id (FK)
+created_at              page_index                  x, y, width, height
+updated_at              title                       content
+                        strokes_json (TEXT)         color
+                        background_json (TEXT)      created_at
+                        page_type                   updated_at
+                        mindmap_json (TEXT)
+                        created_at
+                        updated_at
+
+CloudProject
+────────────────────
+id (CHAR 6, PK)
+name
+password_hash (SHA-256)
+data_json (TEXT)
+created_at
+updated_at
 ```
 
-- `strokes_json`：JSON 陣列，每條筆跡格式：
-  ```json
-  {
-    "id": "abc123",
-    "tool": "pen",
-    "color": "#1a1a2e",
-    "width": 3,
-    "points": [[x, y, pressure], ...]
-  }
-  ```
+**strokes_json** — JSON 陣列，每筆格式：
+```json
+{ "id": "abc123", "tool": "pen", "color": "#1a1a2e", "width": 3,
+  "points": [[x, y, pressure], ...] }
+```
+
+**mindmap_json** — 結構：
+```json
+{
+  "nodes": [{ "id": "n-xxx", "x": 100, "y": 200, "width": 140, "height": 50,
+              "text": "標題", "color": "white" }],
+  "connections": [{ "id": "c-xxx", "sourceId": "n-xxx", "targetId": "n-yyy",
+                    "sourcePort": "right", "targetPort": "left" }]
+}
+```
+
+**background_json** — 範例：
+```json
+{ "type": "ruled", "spacing": 56, "thickness": 1 }
+{ "type": "grid",  "spacing": 56, "thickness": 1 }
+{ "type": "dot",   "spacing": 56, "size": 1.5 }
+{ "type": "blank" }
+{ "type": "image", "scale": 1.0, "ts": 1714000000000 }
+```
 
 ---
 
 ## API 端點
 
+### 筆記本
+
 | 方法 | 路徑 | 說明 |
 |------|------|------|
-| GET | `/api/notebooks` | 列出所有筆記本 |
+| GET | `/api/notebooks` | 列出所有筆記本（含 page_count）|
 | POST | `/api/notebooks` | 建立筆記本（同時建立第 1 頁）|
+| GET | `/api/notebooks/:id` | 取得單一筆記本 |
 | PUT | `/api/notebooks/:id` | 重新命名 |
-| DELETE | `/api/notebooks/:id` | 刪除（cascade） |
+| DELETE | `/api/notebooks/:id` | 刪除（cascade 所有頁面與便利貼）|
+
+### 頁面
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
 | GET | `/api/notebooks/:id/pages` | 列出所有頁面（含筆跡與便利貼）|
-| POST | `/api/notebooks/:id/pages` | 新增頁面 |
-| PUT | `/api/pages/:id/strokes` | 更新筆跡 |
-| DELETE | `/api/pages/:id` | 刪除頁面（自動重新排序）|
+| POST | `/api/notebooks/:id/pages` | 新增頁面（`page_type`: `handwriting`\|`mindmap`）|
+| PUT | `/api/pages/:id/strokes` | 更新筆跡 JSON |
+| PUT | `/api/pages/:id/mindmap` | 更新心智圖 JSON |
+| PUT | `/api/pages/:id/background` | 更新背景樣式 |
+| PUT | `/api/pages/:id/title` | 更新頁面標題 |
+| POST | `/api/pages/:id/background-image` | 上傳背景圖片（multipart/form-data）|
+| DELETE | `/api/pages/:id/background-image` | 刪除背景圖片 |
+| DELETE | `/api/pages/:id` | 刪除頁面（自動重新排序 page_index）|
+
+### 便利貼
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
 | POST | `/api/pages/:id/sticky-notes` | 新增便利貼 |
-| PUT | `/api/sticky-notes/:id` | 更新便利貼（位置 / 內容 / 顏色）|
-| DELETE | `/api/sticky-notes/:id` | 刪除便利貼 |
+| PUT | `/api/sticky-notes/:id` | 更新（位置 / 尺寸 / 內容 / 顏色）|
+| DELETE | `/api/sticky-notes/:id` | 刪除 |
+
+### 背景圖片
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/backgrounds/:page_id` | 讀取背景圖片（MIME 自動偵測）|
+
+### 雲端協作
+
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| POST | `/api/cloud/save` | 建立或更新雲端專案（`id` 為 null 時自動產生 6 位 ID）|
+| POST | `/api/cloud/open` | 驗證密碼並取得資料 |
+| POST | `/api/cloud/meta` | 取得 `updated_at` 用於衝突偵測 |
+
+---
+
+## 環境變數
+
+| 變數 | 必填 | 說明 |
+|------|------|------|
+| `DATABASE_URL` | **必填** | PostgreSQL 連線字串（支援 `postgres://`、`postgresql://`、`postgresql+asyncpg://`）|
+| `PORT` | 否（預設 `8000`）| HTTP 監聽埠位 |
+| `DATA_DIR` | 否（預設 `../data`）| 背景圖片儲存目錄（相對於 `main.py`）|
+
+`DATABASE_URL` 範例：
+```
+postgresql://user:password@localhost:5432/omni_note
+postgres://user:password@db.example.com/omni_note   # Heroku / Railway 格式亦可
+```
 
 ---
 
@@ -114,6 +219,7 @@ updated_at        strokes_json (TEXT)   content
 ### 環境需求
 
 - Python 3.11+
+- PostgreSQL 12+
 - 不需要 Node.js（前端無 build step）
 
 ### 安裝與啟動
@@ -126,65 +232,42 @@ source venv/bin/activate       # Windows: venv\Scripts\activate
 # 2. 安裝依賴
 pip install -r requirements.txt
 
-# 3. 啟動開發伺服器
+# 3. 建立資料庫（PostgreSQL）
+createdb omni_note
+
+# 4. 設定環境變數
+export DATABASE_URL="postgresql://postgres:password@localhost/omni_note"
+export PORT=8000                # 選填
+
+# 5. 啟動開發伺服器（資料表會在啟動時自動建立）
 uvicorn main:app --reload --port 8000
 
-# 4. 開啟瀏覽器
+# 6. 開啟瀏覽器
 # http://localhost:8000
 ```
-
-### 環境變數
-
-| 變數 | 預設值 | 說明 |
-|------|--------|------|
-| `PORT` | `8000` | 監聽埠位 |
-| `DB_PATH` | `../data/db.sqlite` | SQLite 資料庫路徑 |
-
-資料庫預設路徑從 `main.py` 的 `__file__` 向上一層推導，符合 AppCarrier 回滾安全規範：
-
-```python
-APP_ROOT = Path(__file__).resolve().parent.parent   # apps/{name}/
-DATA_DIR = APP_ROOT / "data"
-DB_PATH  = Path(os.getenv("DB_PATH", str(DATA_DIR / "db.sqlite")))
-```
-
----
-
-## AppCarrier 部署
-
-平台會將程式碼部署到 `apps/{app-name}/src/`，資料庫位於 `apps/{app-name}/data/db.sqlite`（回滾不影響）。
-
-啟動指令：
-```
-uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
----
-
-## 鍵盤快捷鍵
-
-| 按鍵 | 功能 |
-|------|------|
-| `P` | 切換鋼筆 |
-| `H` | 切換螢光筆 |
-| `E` | 切換橡皮擦 |
-| `S` | 切換套索選取 |
-| `N` | 新增便利貼 |
-| `Ctrl + Z` | 復原 |
-| `Ctrl + Y` / `Ctrl + Shift + Z` | 重做 |
 
 ---
 
 ## 技術細節
 
-### Canvas 雙層架構
+### 手寫頁：雙 Canvas 架構
 
 ```
-┌─────────────────────────────────┐
+┌─────────────────────────────────┐  zIndex: 11
 │  overlay canvas (pointer events)│  ← 即時繪製中的筆跡 / 橡皮擦游標 / 套索框
-├─────────────────────────────────┤
+├─────────────────────────────────┤  zIndex: 10
 │  base canvas                    │  ← 已提交的所有筆跡（狀態變更時重繪）
 └─────────────────────────────────┘
+```
+
+### 心智圖頁：5 層架構
+
+```
+┌─────────────────────────────────┐  zIndex: 11  overlay canvas（手寫）
+├─────────────────────────────────┤  zIndex: 10  stroke canvas（已提交手寫）
+├─────────────────────────────────┤  zIndex:  2  node divs（拖曳、Port 連線）
+├─────────────────────────────────┤  zIndex:  1  SVG（貝茲弧線連線）
+└─────────────────────────────────┘  zIndex:  0  bg canvas（背景）
 ```
 
 ### 精確橡皮擦演算法
@@ -210,8 +293,38 @@ function pointInPolygon(px, py, polygon) {
 }
 ```
 
+### 心智圖連線幾何
+
+- Port 位置：節點四邊中點（`top`、`right`、`bottom`、`left`）
+- 貝茲控制點：距 Port 80px，方向與 Port 法向量一致
+- 拖曳連線時即時顯示預覽弧線；所有節點的 Port 點同時高亮以引導定位
+
+### 雲端密碼安全
+
+密碼以 SHA-256 雜湊儲存，永不明文存入資料庫：
+```python
+hashlib.sha256(password.encode()).hexdigest()
+```
+
 ### PWA Service Worker 策略
 
-- **靜態資源**：Cache First（優先從快取讀取）
-- **API 請求**（`/api/*`）：Network Only（永遠走網路）
-- 新版本部署時自動清除舊快取
+- **靜態資源**（`/js/*`, `/icons/*`, `index.html`）：Cache First
+- **API 請求**（`/api/*`、`/cloud/*`）：Network Only
+- 新版本部署時自動清除舊快取版本
+
+---
+
+## 鍵盤快捷鍵
+
+| 按鍵 | 功能 |
+|------|------|
+| `P` | 切換鋼筆 |
+| `H` | 切換螢光筆 |
+| `E` | 切換橡皮擦 |
+| `S` | 切換套索選取 |
+| `N` | 新增便利貼 |
+| `M` | 切換心智圖工具（心智圖頁）|
+| `Ctrl + Z` | 復原 |
+| `Ctrl + Y` / `Ctrl + Shift + Z` | 重做 |
+| `Delete` / `Backspace` | 刪除選取節點或連線（心智圖工具）|
+| `Escape` | 取消選取 / 取消編輯 |
