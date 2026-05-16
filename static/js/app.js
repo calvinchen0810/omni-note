@@ -187,7 +187,6 @@ function App() {
       dispatch({ type: "REPLACE_PAGE", tempId, page });
     } catch (e) {
       console.error("addPage:", e);
-      dispatch({ type: "DELETE_PAGE", pageId: tempId });
     }
   }
 

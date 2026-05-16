@@ -441,6 +441,24 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
   // Selected node for floating toolbar
   const selectedNode = nodes.find((n) => n.id === selectedId);
 
+  // Selected connection delete button — compute bezier midpoint at t=0.5
+  const selectedConn = isMindmapTool ? conns.find((c) => c.id === selectedId) : null;
+  let connDeletePos = null;
+  if (selectedConn) {
+    const csrc = nodes.find((n) => n.id === selectedConn.sourceId);
+    const ctgt = nodes.find((n) => n.id === selectedConn.targetId);
+    if (csrc && ctgt) {
+      const sp = portPos(csrc, selectedConn.sourcePort);
+      const tp = portPos(ctgt, selectedConn.targetPort);
+      const [sdx, sdy] = PORT_DIRS[selectedConn.sourcePort] ?? [0, 0];
+      const [tdx, tdy] = PORT_DIRS[selectedConn.targetPort] ?? [0, 0];
+      connDeletePos = {
+        x: (sp.x + 3 * (sp.x + sdx) + 3 * (tp.x + tdx) + tp.x) / 8,
+        y: (sp.y + 3 * (sp.y + sdy) + 3 * (tp.y + tdy) + tp.y) / 8,
+      };
+    }
+  }
+
   return h("div", {
     ref: containerRef,
     tabIndex: 0,
@@ -553,6 +571,15 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
       onColorChange: (c) => changeNodeColor(selectedNode.id, c),
       onDelete: deleteSelected,
     }),
+
+    // Delete button at midpoint of selected connection
+    connDeletePos && h("button", {
+      class: "mm-conn-delete-btn",
+      title: "刪除連線 (Del)",
+      style: { position: "absolute", left: `${connDeletePos.x}px`, top: `${connDeletePos.y}px`, transform: "translate(-50%, -50%)", zIndex: 20 },
+      onPointerDown: (e) => e.stopPropagation(),
+      onClick: () => deleteSelected(),
+    }, "✕"),
 
     // Layer 4: stroke canvas (transparent, always on top of nodes)
     h("canvas", { ref: strokeRef, style: { position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none" } }),
