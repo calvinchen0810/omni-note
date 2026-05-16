@@ -17,11 +17,10 @@
 | 套索選取 | 自由繪製選取區（Ray Casting 演算法），可拖曳移動選取筆跡 |
 | 便利貼 | 可拖曳、縮放、換色、inline 富文字編輯 |
 | 心智圖 | 雙擊空白新增節點、拖曳節點連線、貝茲弧線連接、節點顏色、刪除；心智圖與手寫可疊加 |
-| 背景樣式 | 橫線 / 方格 / 點陣 / 空白，可自訂間距與線條粗細；支援上傳圖片當背景 |
+| 背景樣式 | 橫線 / 方格 / 點陣 / 空白，可自訂間距與線條粗細；支援上傳圖片當背景（存於 DB） |
 | 縮放 | 頂欄縮放拉桿（10%–200%），支援平移（Pan 模式） |
 | 多頁管理 | 底部分頁列，可新增手寫頁或心智圖頁；雙擊分頁標籤重新命名；可刪除頁面 |
 | 自動儲存 | 停筆 800ms 後自動 PUT 到後端，頂部圓點顯示儲存狀態（橘＝未存，綠＝已存） |
-| 雲端協作 | 以 6 位 ID + 密碼建立雲端專案；15 秒自動同步，衝突時彈出三向比較 |
 | 匯出 | 匯出當前頁為 PNG，或匯出全本為 PDF |
 | PWA | Service Worker cache-first，可加入主畫面離線使用 |
 
@@ -32,20 +31,19 @@
 ```
 omni-note/
 ├── main.py                  ← FastAPI 入口、背景圖片路由、靜態檔案掛載
-├── database.py              ← SQLAlchemy async engine（PostgreSQL/asyncpg）
-├── models.py                ← ORM 模型：Notebook / Page / StickyNote / CloudProject
+├── database.py              ← SQLAlchemy async engine（PostgreSQL/asyncpg）、DB 遷移
+├── models.py                ← ORM 模型：Notebook / Page / StickyNote
 ├── requirements.txt
 ├── routers/
 │   ├── notebooks.py         ← CRUD /api/notebooks
-│   ├── pages.py             ← CRUD /api/pages，筆跡、背景、心智圖、頁面標題
-│   ├── sticky_notes.py      ← CRUD /api/sticky-notes
-│   └── cloud.py             ← /api/cloud/save、open、meta（雲端協作）
+│   ├── pages.py             ← CRUD /api/pages，筆跡、背景、背景圖片、心智圖、頁面標題
+│   └── sticky_notes.py      ← CRUD /api/sticky-notes
 └── static/
     ├── index.html           ← SPA 入口，內嵌所有 CSS
     ├── manifest.json        ← PWA manifest
     ├── sw.js                ← Service Worker（cache-first）
     └── js/
-        ├── app.js           ← 主 App 元件、鍵盤快捷鍵、auto-save、雲端同步 UI
+        ├── app.js           ← 主 App 元件、鍵盤快捷鍵、auto-save
         ├── store.js         ← useReducer 狀態管理、Undo/Redo
         ├── api.js           ← REST 客戶端（相對路徑，無 hardcode host）
         ├── canvas-utils.js  ← 筆跡渲染、橡皮擦、套索、背景繪製
@@ -82,15 +80,17 @@ omni-note/
   → api.updateMindmap → PUT /api/pages/:id/mindmap
 ```
 
-### 雲端同步
+### 背景圖片
 
 ```
-儲存 → api.cloudSave → POST /api/cloud/save（建立或更新 CloudProject）
-開啟 → api.cloudOpen → POST /api/cloud/open（驗證密碼，回傳 data_json）
-自動同步（每 15 秒）→ api.cloudMeta 比較 updated_at
-  → 若雲端較新：拉取最新資料
-  → 若本地較新：推送本地資料
-  → 若衝突（同時修改）：彈出 ConflictModal 三向比較
+上傳 → POST /api/pages/:id/background-image（multipart）
+     → 圖片 bytes 存入 pages.background_image_data（BYTEA）
+     → MIME 存入 pages.background_image_mime
+     → background_json 更新為 { type:"image", scale, ts }
+
+讀取 → GET /backgrounds/:page_id
+     → 從 DB 讀取 background_image_data + background_image_mime
+     → 回傳 binary Response
 ```
 
 ---
@@ -98,27 +98,20 @@ omni-note/
 ## 資料庫結構
 
 ```
-Notebook                Page                        StickyNote
-────────────            ────────────────────────    ──────────────────────
-id (PK)                 id (PK)                     id (PK)
-title                   notebook_id (FK)            page_id (FK)
-created_at              page_index                  x, y, width, height
-updated_at              title                       content
-                        strokes_json (TEXT)         color
-                        background_json (TEXT)      created_at
-                        page_type                   updated_at
+Notebook                Page                            StickyNote
+────────────            ──────────────────────────────  ──────────────────────
+id (PK)                 id (PK)                         id (PK)
+title                   notebook_id (FK)                page_id (FK)
+created_at              page_index                      x, y, width, height
+updated_at              title                           content
+                        strokes_json (TEXT)             color
+                        background_json (TEXT)          created_at
+                        background_image_data (BYTEA)   updated_at
+                        background_image_mime (TEXT)
+                        page_type
                         mindmap_json (TEXT)
                         created_at
                         updated_at
-
-CloudProject
-────────────────────
-id (CHAR 6, PK)
-name
-password_hash (SHA-256)
-data_json (TEXT)
-created_at
-updated_at
 ```
 
 **strokes_json** — JSON 陣列，每筆格式：
@@ -146,6 +139,8 @@ updated_at
 { "type": "image", "scale": 1.0, "ts": 1714000000000 }
 ```
 
+`type: "image"` 時，實際圖片 bytes 存於 `background_image_data`；`ts` 用於前端快取破壞。
+
 ---
 
 ## API 端點
@@ -170,8 +165,8 @@ updated_at
 | PUT | `/api/pages/:id/mindmap` | 更新心智圖 JSON |
 | PUT | `/api/pages/:id/background` | 更新背景樣式 |
 | PUT | `/api/pages/:id/title` | 更新頁面標題 |
-| POST | `/api/pages/:id/background-image` | 上傳背景圖片（multipart/form-data）|
-| DELETE | `/api/pages/:id/background-image` | 刪除背景圖片 |
+| POST | `/api/pages/:id/background-image` | 上傳背景圖片（multipart/form-data，存入 DB）|
+| DELETE | `/api/pages/:id/background-image` | 刪除背景圖片（清除 DB 欄位）|
 | DELETE | `/api/pages/:id` | 刪除頁面（自動重新排序 page_index）|
 
 ### 便利貼
@@ -186,15 +181,7 @@ updated_at
 
 | 方法 | 路徑 | 說明 |
 |------|------|------|
-| GET | `/backgrounds/:page_id` | 讀取背景圖片（MIME 自動偵測）|
-
-### 雲端協作
-
-| 方法 | 路徑 | 說明 |
-|------|------|------|
-| POST | `/api/cloud/save` | 建立或更新雲端專案（`id` 為 null 時自動產生 6 位 ID）|
-| POST | `/api/cloud/open` | 驗證密碼並取得資料 |
-| POST | `/api/cloud/meta` | 取得 `updated_at` 用於衝突偵測 |
+| GET | `/backgrounds/:page_id` | 讀取背景圖片（從 DB 讀取，依 MIME 回傳）|
 
 ---
 
@@ -204,13 +191,14 @@ updated_at
 |------|------|------|
 | `DATABASE_URL` | **必填** | PostgreSQL 連線字串（支援 `postgres://`、`postgresql://`、`postgresql+asyncpg://`）|
 | `PORT` | 否（預設 `8000`）| HTTP 監聽埠位 |
-| `DATA_DIR` | 否（預設 `../data`）| 背景圖片儲存目錄（相對於 `main.py`）|
 
 `DATABASE_URL` 範例：
 ```
 postgresql://user:password@localhost:5432/omni_note
 postgres://user:password@db.example.com/omni_note   # Heroku / Railway 格式亦可
 ```
+
+Neon、Render 等雲端 PostgreSQL 的 `sslmode=require` 與 `channel_binding` 參數已自動處理，直接貼上原始連線字串即可。
 
 ---
 
@@ -299,17 +287,14 @@ function pointInPolygon(px, py, polygon) {
 - 貝茲控制點：距 Port 80px，方向與 Port 法向量一致
 - 拖曳連線時即時顯示預覽弧線；所有節點的 Port 點同時高亮以引導定位
 
-### 雲端密碼安全
+### 資料庫遷移策略
 
-密碼以 SHA-256 雜湊儲存，永不明文存入資料庫：
-```python
-hashlib.sha256(password.encode()).hexdigest()
-```
+`database.py` 的 `init_db()` 在每次啟動時執行 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`，無需額外遷移工具即可做到向前相容的欄位新增。
 
 ### PWA Service Worker 策略
 
 - **靜態資源**（`/js/*`, `/icons/*`, `index.html`）：Cache First
-- **API 請求**（`/api/*`、`/cloud/*`）：Network Only
+- **API 請求**（`/api/*`）：Network Only
 - 新版本部署時自動清除舊快取版本
 
 ---
