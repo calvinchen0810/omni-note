@@ -89,7 +89,7 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
     renderAllStrokes(ctx, overrideStrokes ?? page?.strokes ?? []);
   }
 
-  useEffect(() => { redrawBase(); }, [state.pages, state.currentPageIndex]);
+  useEffect(() => { redrawBase(); }, [state.pages, state.currentPageIndex, state.bgType]);
 
   // ── Redraw overlay when selection changes ─────────────────────────────────
 
@@ -104,7 +104,7 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
     }
   }, [state.lassoPath, state.selectedStrokeIds]);
 
-  // ── Pointer position helper ───────────────────────────────────────────────
+  // ── Pointer position helper (accounts for CSS zoom) ──────────────────────
 
   function pos(e) {
     const canvas = overlayRef.current;
@@ -190,10 +190,8 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
 
     if (result.changed) {
       sess.current.pendingErasedStrokes = result.strokes;
-      // Optimistic visual update without touching Redux
       redrawBase(result.strokes);
 
-      // Debounce the Redux dispatch so rapid erasing is a single undo entry
       clearTimeout(sess.current.eraseTimer);
       sess.current.eraseTimer = setTimeout(() => {
         dispatch({ type: "SET_STROKES", strokes: sess.current.pendingErasedStrokes, pushUndo: true });
@@ -212,7 +210,6 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
 
   function lassoDown(p) {
     if (state.selectedStrokeIds.length > 0) {
-      // Start drag of existing selection
       sess.current.dragging = true;
       sess.current.dragStart = p;
       sess.current.dragBaseStrokes = state.pages[state.currentPageIndex]?.strokes ?? [];

@@ -21,9 +21,10 @@ const MAX_ZOOM = 2.0;
 // ── App ───────────────────────────────────────────────────────────────────────
 
 function App() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch]           = useReducer(reducer, initialState);
   const [notebooks, setNotebooks]   = useReducer((s, a) => a, []);
   const [zoom, setZoom] = useState(1);
+  const [toolbarWidth, setToolbarWidth] = useState(58);
   const [cloudModal, setCloudModal] = useState(null); // "save" | "open" | { type:"open-by-id", id } | null
   const [conflictData, setConflictData] = useState(null);
   const saveTimerRef = useRef(null);
@@ -420,6 +421,22 @@ function App() {
     }
   }, [state.currentTool]);
 
+  // ── Toolbar resize ────────────────────────────────────────────────────────
+
+  function handleToolbarResizeStart(e) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = toolbarWidth;
+    function onMove(ev) {
+      setToolbarWidth(Math.max(48, Math.min(120, startW + (ev.clientX - startX))));
+    }
+    function onUp() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (state.view === "list") {
@@ -435,6 +452,7 @@ function App() {
   }
 
   const currentPage = state.pages[state.currentPageIndex];
+  const interactive = ["select", "sticky"].includes(state.currentTool);
 
   return h("div", { class: "app editor" },
     h("div", { class: "top-bar" },
@@ -643,6 +661,8 @@ function ZoomMenu({ zoom, onZoom }) {
     open && h("div", { class: "export-backdrop", onClick: close })
   );
 }
+
+// ── Export dropdown menu ──────────────────────────────────────────────────────
 
 function ExportMenu({ onExportPng, onExportPdf }) {
   const [open, setOpen] = useState(false);

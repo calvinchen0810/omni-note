@@ -21,6 +21,8 @@ export const initialState = {
 
   // Cloud project currently open: { id, name, password, updatedAt } | null
   cloudProject: null,
+
+  bgType: "ruled",   // "ruled" | "grid" | "dot" | "blank"
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -154,6 +156,7 @@ export function reducer(state, action) {
     case "SET_HL_COLOR":     return { ...state, highlighterColor: action.color };
     case "SET_HL_WIDTH":     return { ...state, highlighterWidth: action.width };
     case "SET_ERASER_WIDTH": return { ...state, eraserWidth: action.width };
+    case "SET_BG_TYPE":     return { ...state, bgType: action.bgType };
 
     // ── Strokes ───────────────────────────────────────────────────────────────
 
