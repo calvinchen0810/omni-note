@@ -555,6 +555,12 @@
     }
     .tab-delete:hover { color: #dc2626; background: #fee2e2; }
     .page-tab-icon { font-size: 12px; }
+    .page-tab-label { cursor: text; }
+    .page-tab-rename-input {
+      width: 80px; font-size: 13px; font-weight: 500;
+      border: 1px solid #a5b4fc; border-radius: 4px;
+      padding: 1px 4px; outline: none; background: #fff; color: #1a1a2e;
+    }
     .add-page-menu {
       position: absolute; bottom: calc(100% + 6px); left: 0;
       background: #fff; border-radius: 10px; padding: 6px;
@@ -594,10 +600,11 @@
       opacity: 0; transition: opacity .15s; cursor: crosshair; z-index: 5;
     }
     .mm-node:hover .mm-port, .mm-node.selected .mm-port { opacity: 1; }
-    .mm-port-top    { top: -7px;  left: 50%; transform: translateX(-50%); }
-    .mm-port-right  { right: -7px; top: 50%; transform: translateY(-50%); }
-    .mm-port-bottom { bottom: -7px; left: 50%; transform: translateX(-50%); }
-    .mm-port-left   { left: -7px;  top: 50%; transform: translateY(-50%); }
+    .mm-port-top    { top: -8px;  left: 50%; transform: translateX(-50%); }
+    .mm-port-right  { right: -8px; top: 50%; transform: translateY(-50%); }
+    .mm-port-bottom { bottom: -8px; left: 50%; transform: translateX(-50%); }
+    .mm-port-left   { left: -8px;  top: 50%; transform: translateY(-50%); }
+    .mm-connecting .mm-port { opacity: 1; }
     .mm-node-toolbar {
       position: absolute; display: flex; align-items: center; gap: 3px;
       background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px 6px;

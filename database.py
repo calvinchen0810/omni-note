@@ -44,3 +44,9 @@ async def init_db():
             ))
         except Exception:
             pass
+        try:
+            await conn.execute(text(
+                "ALTER TABLE pages ADD COLUMN title TEXT"
+            ))
+        except Exception:
+            pass

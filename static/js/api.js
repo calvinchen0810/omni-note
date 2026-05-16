@@ -19,6 +19,7 @@ export const api = {
   createPage: (notebookId, background, page_type = "handwriting") =>
     req("POST", `/notebooks/${notebookId}/pages`, { background, page_type }),
   updateStrokes: (pageId, strokes) => req("PUT", `/pages/${pageId}/strokes`, { strokes }),
+  updatePageTitle: (pageId, title) => req("PUT", `/pages/${pageId}/title`, { title }),
   updateMindmap: (pageId, mindmap) => req("PUT", `/pages/${pageId}/mindmap`, mindmap),
   deletePage: (pageId) => req("DELETE", `/pages/${pageId}`),
 

@@ -63,6 +63,10 @@ class MindmapUpdate(BaseModel):
     connections: list
 
 
+class PageTitleUpdate(BaseModel):
+    title: str
+
+
 class StickyNoteOut(BaseModel):
     id: int
     page_id: int
@@ -81,6 +85,7 @@ class PageOut(BaseModel):
     id: int
     notebook_id: int
     page_index: int
+    title: str | None
     strokes: list
     sticky_notes: list[StickyNoteOut]
     background: dict
@@ -95,6 +100,7 @@ def _page_out(p: Page) -> PageOut:
         id=p.id,
         notebook_id=p.notebook_id,
         page_index=p.page_index,
+        title=p.title,
         strokes=json.loads(p.strokes_json),
         sticky_notes=[StickyNoteOut.model_validate(sn) for sn in p.sticky_notes],
         background=json.loads(p.background_json or '{"type":"blank"}'),
@@ -238,6 +244,19 @@ async def update_mindmap(
     page.updated_at = datetime.utcnow()
     await db.commit()
     return {"ok": True}
+
+
+# ── Update title ─────────────────────────────────────────────────────────────
+
+@router.put("/pages/{page_id}/title")
+async def update_page_title(
+    page_id: int, body: PageTitleUpdate, db: AsyncSession = Depends(get_db)
+):
+    page = await _get_page(page_id, db)
+    page.title = body.title.strip() or None
+    page.updated_at = datetime.utcnow()
+    await db.commit()
+    return {"title": page.title}
 
 
 # ── Delete page ───────────────────────────────────────────────────────────────

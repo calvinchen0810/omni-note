@@ -510,7 +510,7 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
     ),
 
     // Layer 3: node divs
-    h("div", { style: { position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none" } },
+    h("div", { class: connecting ? "mm-connecting" : undefined, style: { position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none" } },
       nodes.map((node) => {
         const c    = NODE_COLORS[node.color] ?? NODE_COLORS.white;
         const dx   = mmDragState?.id === node.id ? mmDragState.x : node.x;

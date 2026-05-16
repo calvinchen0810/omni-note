@@ -135,6 +135,12 @@ export function reducer(state, action) {
         pages: state.pages.map((p) => p.id === action.tempId ? action.page : p),
       };
 
+    case "UPDATE_PAGE_TITLE":
+      return {
+        ...state,
+        pages: state.pages.map((p) => p.id === action.pageId ? { ...p, title: action.title } : p),
+      };
+
     // ── Tools ─────────────────────────────────────────────────────────────────
 
     case "SET_TOOL":

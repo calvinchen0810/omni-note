@@ -203,6 +203,14 @@ function App() {
     }
   }
 
+  // ── Page rename ───────────────────────────────────────────────────────────
+
+  async function handleRenameTab(pageId, title) {
+    dispatch({ type: "UPDATE_PAGE_TITLE", pageId, title: title || null });
+    if (state.cloudProject) return;
+    try { await api.updatePageTitle(pageId, title || ""); } catch (e) { console.error("renameTab:", e); }
+  }
+
   // ── Undo / Redo ───────────────────────────────────────────────────────────
 
   function handleUndo() { dispatch({ type: "UNDO" }); scheduleSave(); }
@@ -546,6 +554,7 @@ function App() {
       dispatch,
       onAddPage: handleAddPage,
       onDeletePage: handleDeletePage,
+      onRenamePage: handleRenameTab,
     }),
 
     cloudModal === "save" && h(SaveCloudModal, {

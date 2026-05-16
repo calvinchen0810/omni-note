@@ -34,6 +34,7 @@ class Page(Base):
     id = Column(Integer, primary_key=True, index=True)
     notebook_id = Column(Integer, ForeignKey("notebooks.id"), nullable=False)
     page_index = Column(Integer, nullable=False, default=0)
+    title = Column(String(255), nullable=True, default=None)
     strokes_json = Column(Text, nullable=False, default="[]")
     background_json = Column(Text, nullable=False, default='{"type":"blank"}')
     page_type = Column(String(20), nullable=False, default="handwriting")

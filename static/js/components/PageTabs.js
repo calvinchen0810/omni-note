@@ -1,9 +1,49 @@
 import { h } from "https://esm.sh/preact@10.19.3";
-import { useState } from "https://esm.sh/preact@10.19.3/hooks";
+import { useState, useRef, useEffect } from "https://esm.sh/preact@10.19.3/hooks";
 
 const TYPE_ICON = { handwriting: "✏️", mindmap: "🧠" };
 
-export function PageTabs({ state, dispatch, onAddPage, onDeletePage }) {
+function TabLabel({ page, index, onRename }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const inputRef = useRef(null);
+
+  function startEdit(e) {
+    e.stopPropagation();
+    setValue(page.title ?? "");
+    setEditing(true);
+  }
+
+  useEffect(() => {
+    if (editing && inputRef.current) inputRef.current.select();
+  }, [editing]);
+
+  function commit() {
+    setEditing(false);
+    onRename?.(page.id, value.trim());
+  }
+
+  if (editing) {
+    return h("input", {
+      ref: inputRef,
+      class: "page-tab-rename-input",
+      value,
+      onInput: (e) => setValue(e.target.value),
+      onBlur: commit,
+      onKeyDown: (e) => {
+        if (e.key === "Enter") { e.preventDefault(); commit(); }
+        if (e.key === "Escape") setEditing(false);
+        e.stopPropagation();
+      },
+      onClick: (e) => e.stopPropagation(),
+    });
+  }
+
+  const label = page.title || `第 ${index + 1} 頁`;
+  return h("span", { class: "page-tab-label", onDblClick: startEdit, title: "雙擊重新命名" }, label);
+}
+
+export function PageTabs({ state, dispatch, onAddPage, onDeletePage, onRenamePage }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
 
   function addPage(type) {
@@ -22,7 +62,7 @@ export function PageTabs({ state, dispatch, onAddPage, onDeletePage }) {
           onClick: () => dispatch({ type: "SET_PAGE_INDEX", index: i }),
         },
           h("span", { class: "page-tab-icon" }, TYPE_ICON[page.page_type ?? "handwriting"] ?? "✏️"),
-          h("span", null, `第 ${i + 1} 頁`),
+          h(TabLabel, { page, index: i, onRename: onRenamePage }),
           state.pages.length > 1 && i === state.currentPageIndex &&
             h("button", {
               class: "tab-delete",
