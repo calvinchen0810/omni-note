@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime, LargeBinary
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -31,6 +31,8 @@ class Page(Base):
     background_json = Column(Text, nullable=False, default='{"type":"blank"}')
     page_type = Column(String(20), nullable=False, default="handwriting")
     mindmap_json = Column(Text, nullable=False, default='{"nodes":[],"connections":[]}')
+    background_image_data = Column(LargeBinary, nullable=True)
+    background_image_mime = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

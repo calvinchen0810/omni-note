@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import text
 
-# Backgrounds are still stored on the filesystem
 APP_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("DATA_DIR", str(APP_ROOT / "data")))
 DATA_DIR.mkdir(exist_ok=True)
@@ -60,6 +59,8 @@ async def init_db():
             "ALTER TABLE pages ADD COLUMN IF NOT EXISTS page_type TEXT NOT NULL DEFAULT 'handwriting'",
             "ALTER TABLE pages ADD COLUMN IF NOT EXISTS mindmap_json TEXT NOT NULL DEFAULT '{\"nodes\":[],\"connections\":[]}'",
             "ALTER TABLE pages ADD COLUMN IF NOT EXISTS title TEXT",
+            "ALTER TABLE pages ADD COLUMN IF NOT EXISTS background_image_data BYTEA",
+            "ALTER TABLE pages ADD COLUMN IF NOT EXISTS background_image_mime VARCHAR(50)",
         ]
         for sql in migrations:
             await conn.execute(text(sql))

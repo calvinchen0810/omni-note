@@ -4,15 +4,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from datetime import datetime
-from pathlib import Path
 import json
 
-from database import get_db, DATA_DIR
+from database import get_db
 from models import Page, StickyNote
 
 router = APIRouter()
 
-BACKGROUNDS_DIR = DATA_DIR / "backgrounds"
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 
 
@@ -26,16 +24,6 @@ async def _get_page(page_id: int, db: AsyncSession) -> Page:
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
     return page
-
-
-def _bg_file(page_id: int) -> Path:
-    return BACKGROUNDS_DIR / str(page_id)
-
-
-def _delete_bg_file(page_id: int):
-    p = _bg_file(page_id)
-    if p.exists():
-        p.unlink()
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -215,9 +203,9 @@ async def upload_background_image(
 
     page = await _get_page(page_id, db)
 
-    BACKGROUNDS_DIR.mkdir(parents=True, exist_ok=True)
     content = await file.read()
-    _bg_file(page_id).write_bytes(content)
+    page.background_image_data = content
+    page.background_image_mime = file.content_type
 
     # Preserve existing scale if background was already an image
     current = json.loads(page.background_json or '{"type":"blank"}')
@@ -238,7 +226,8 @@ async def delete_background_image(
     page_id: int, db: AsyncSession = Depends(get_db)
 ):
     page = await _get_page(page_id, db)
-    _delete_bg_file(page_id)
+    page.background_image_data = None
+    page.background_image_mime = None
     page.background_json = '{"type":"blank"}'
     page.updated_at = datetime.utcnow()
     await db.commit()
@@ -286,7 +275,6 @@ async def delete_page(page_id: int, db: AsyncSession = Depends(get_db)):
     for i, p in enumerate(remaining):
         p.page_index = i
 
-    _delete_bg_file(page_id)
     await db.delete(page)
     await db.commit()
     return {"ok": True}
