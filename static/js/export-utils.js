@@ -1,4 +1,4 @@
-import { renderAllStrokes, drawPageBackground } from "./canvas-utils.js";
+import { renderAllStrokes, renderStroke, drawPageBackground } from "./canvas-utils.js";
 import { renderMindmapToCanvas } from "./components/MindMapCanvas.js";
 
 // ── Canvas rendering ──────────────────────────────────────────────────────────
@@ -81,57 +81,57 @@ export async function exportAllPagesAsPdf(pages, filename, withBg = true) {
   pdf.save(`${filename}.pdf`);
 }
 
+const STICKY_HANDLE_H = 22;
+
 // ── Sticky notes canvas rendering ─────────────────────────────────────────────
+
+function parseStickyContent(content) {
+  try {
+    const obj = JSON.parse(content || "{}");
+    const raw = Array.isArray(obj.strokes) ? obj.strokes : [];
+    const strokes = raw.map((s) => {
+      if (!s) return null;
+      if (Array.isArray(s.points)) return s;
+      if (Array.isArray(s.pts)) return { ...s, points: s.pts.map((p) => [p[0], p[1], p[2] ?? 0.5]) };
+      return null;
+    }).filter(Boolean);
+    return { strokes, opacity: typeof obj.opacity === "number" ? obj.opacity : 1.0 };
+  } catch {
+    return { strokes: [], opacity: 1.0 };
+  }
+}
 
 function renderStickyNotesOnCanvas(ctx, notes) {
   for (const note of notes) {
-    ctx.save();
-    const [r, g, b] = hexToRgb(note.color);
+    const { strokes, opacity } = parseStickyContent(note.content);
+    const color = note.color || "#fff6bf";
 
-    // Background
-    ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
-    ctx.strokeStyle = note.color;
-    ctx.lineWidth = 2;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+
+    // Body background
+    ctx.fillStyle = color;
     drawRoundRect(ctx, note.x, note.y, note.width, note.height, 6);
     ctx.fill();
-    ctx.stroke();
 
-    // Header bar
-    ctx.fillStyle = note.color;
-    drawRoundRectTop(ctx, note.x, note.y, note.width, 24, 6);
+    // Handle bar (subtle darker strip at top)
+    ctx.fillStyle = "rgba(0,0,0,0.08)";
+    drawRoundRectTop(ctx, note.x, note.y, note.width, STICKY_HANDLE_H, 6);
     ctx.fill();
 
-    // Text content
-    if (note.content && note.content.trim()) {
-      ctx.fillStyle = "#1a1a2e";
-      ctx.font = "14px sans-serif";
-      ctx.textBaseline = "top";
-      const lines = wrapText(ctx, note.content, note.width - 20);
-      let y = note.y + 32;
-      for (const line of lines) {
-        if (y + 18 > note.y + note.height - 6) break;
-        ctx.fillText(line, note.x + 10, y);
-        y += 20;
-      }
+    // Clip to drawing area below the handle and render strokes
+    if (strokes.length > 0) {
+      ctx.beginPath();
+      ctx.rect(note.x, note.y + STICKY_HANDLE_H, note.width, note.height - STICKY_HANDLE_H);
+      ctx.clip();
+      ctx.translate(note.x, note.y + STICKY_HANDLE_H);
+      for (const stroke of strokes) renderStroke(ctx, stroke);
     }
 
     ctx.restore();
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function hexToRgb(hex) {
-  try {
-    return [
-      parseInt(hex.slice(1, 3), 16),
-      parseInt(hex.slice(3, 5), 16),
-      parseInt(hex.slice(5, 7), 16),
-    ];
-  } catch {
-    return [255, 214, 10];
-  }
-}
 
 function drawRoundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -163,21 +163,3 @@ function drawRoundRectTop(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function wrapText(ctx, text, maxWidth) {
-  const result = [];
-  for (const para of text.split("\n")) {
-    if (!para) { result.push(""); continue; }
-    let line = "";
-    for (const word of para.split(" ")) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width <= maxWidth) {
-        line = test;
-      } else {
-        if (line) result.push(line);
-        line = word;
-      }
-    }
-    if (line) result.push(line);
-  }
-  return result;
-}
