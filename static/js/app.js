@@ -40,6 +40,18 @@ function App() {
 
   useEffect(() => { stateRef.current = state; }, [state]);
 
+  // ── Fit zoom on editor open ───────────────────────────────────────────────
+
+  useEffect(() => {
+    if (state.view !== "editor") return;
+    requestAnimationFrame(() => {
+      const vp = canvasViewportRef.current;
+      if (!vp) return;
+      const fit = Math.min(vp.clientWidth / PAGE_WIDTH, vp.clientHeight / PAGE_HEIGHT) * 0.95;
+      setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fit)));
+    });
+  }, [state.view]);
+
   // ── Load notebooks on mount ───────────────────────────────────────────────
 
   useEffect(() => { loadNotebooks(); }, []);
@@ -359,7 +371,7 @@ function App() {
         })
       ),
       h("div", { class: "top-bar-actions" },
-        h(ZoomMenu, { zoom, onZoom: updateZoom }),
+        h(ZoomMenu, { zoom, onZoom: updateZoom, viewport: canvasViewportRef }),
         h(BackgroundPicker, {
           page: currentPage,
           onUpdate: handleUpdateBackground,
@@ -446,8 +458,15 @@ function App() {
   );
 }
 
-function ZoomMenu({ zoom, onZoom }) {
+function ZoomMenu({ zoom, onZoom, viewport }) {
   const [open, setOpen] = useState(false);
+
+  function fitZoom() {
+    const vp = viewport?.current;
+    if (!vp) return onZoom(1);
+    const fit = Math.min(vp.clientWidth / PAGE_WIDTH, vp.clientHeight / PAGE_HEIGHT) * 0.95;
+    onZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fit)));
+  }
 
   function close() {
     setOpen(false);
@@ -471,8 +490,8 @@ function ZoomMenu({ zoom, onZoom }) {
         h("span", { class: "zoom-slider-value" }, `${Math.round(zoom * 100)}%`),
         h("button", {
           class: "zoom-reset",
-          onClick: () => onZoom(1),
-        }, "100%")
+          onClick: fitZoom,
+        }, "適合")
       ),
       h("input", {
         class: "zoom-slider",
