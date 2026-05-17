@@ -55,151 +55,213 @@ def answer_line(c, x, y, w=400):
 # SCENE 2 — Exam paper (Biology Quiz)
 # ══════════════════════════════════════════════════════════════════════════════
 
+def page_header(c, page_num, total=2):
+    c.setFillColorRGB(0.24, 0.27, 0.6)
+    c.rect(0, H - 72, W, 72, stroke=0, fill=1)
+    c.setFont("Helvetica-Bold", 19)
+    c.setFillColorRGB(1, 1, 1)
+    c.drawString(40, H - 34, "Biology Quiz — Cell Structure & Function")
+    c.setFont("Helvetica", 10.5)
+    c.drawString(40, H - 54, "Name: _________________________   Date: __________   Score: ______ / 100")
+    c.setFont("Helvetica", 9)
+    c.drawRightString(W - 30, H - 54, f"Page {page_num} / {total}")
+
+def page_footer(c, text="Good luck!  —  OmniNote Demo Exam"):
+    c.setFont("Helvetica-Oblique", 9)
+    c.setFillColorRGB(0.55, 0.55, 0.55)
+    c.drawCentredString(W / 2, 24, text)
+
+
 def make_exam():
     c, path = new_pdf("scene2_exam_biology.pdf")
 
-    # Header band
-    c.setFillColorRGB(0.24, 0.27, 0.6)
-    c.rect(0, H - 80, W, 80, stroke=0, fill=1)
-    c.setFont("Helvetica-Bold", 20)
-    c.setFillColorRGB(1, 1, 1)
-    c.drawString(40, H - 38, "Biology Quiz — Cell Structure & Function")
-    c.setFont("Helvetica", 11)
-    c.drawString(40, H - 58, "Name: ___________________________    Date: ___________    Score: ______ / 100")
+    # ══════════════════════════════════════
+    # PAGE 1
+    # ══════════════════════════════════════
+    page_header(c, 1)
+    y = H - 95
 
-    y = H - 105
-
-    # ── Section A: Multiple Choice ──────────────────────────────────────────
+    # ── Section A: Multiple Choice (4 questions, 2 options each row) ──────────
     heading(c, "Section A  Multiple Choice  (40 pts)", y, size=13, color=(0.24, 0.27, 0.6))
-    y -= 6
-    rule(c, y, color=(0.24, 0.27, 0.6))
-    y -= 18
+    y -= 5; rule(c, y, color=(0.24, 0.27, 0.6)); y -= 20
 
-    mc_questions = [
-        ("1.", "Which organelle is responsible for producing ATP through cellular respiration?",
-         ["A. Nucleus", "B. Mitochondria", "C. Ribosome", "D. Golgi apparatus"]),
-        ("2.", "The cell membrane is primarily composed of:",
-         ["A. Proteins only", "B. Carbohydrates only",
-          "C. A phospholipid bilayer with embedded proteins", "D. Cellulose"]),
-        ("3.", "Which of the following is found in plant cells but NOT in animal cells?",
-         ["A. Mitochondria", "B. Cell membrane", "C. Cell wall", "D. Nucleus"]),
-        ("4.", "Ribosomes are responsible for:",
-         ["A. DNA replication", "B. Protein synthesis",
-          "C. Lipid production", "D. Energy storage"]),
-        ("5.", "The process by which water moves across a semi-permeable membrane is called:",
-         ["A. Active transport", "B. Diffusion", "C. Osmosis", "D. Endocytosis"]),
+    mc = [
+        ("1.", "Which organelle produces ATP?",
+         ["A.  Nucleus", "B.  Mitochondria", "C.  Ribosome", "D.  Golgi apparatus"]),
+        ("2.", "Plant cells have ___ that animal cells do not.",
+         ["A.  Centrioles", "B.  Cell wall", "C.  Ribosomes", "D.  Mitochondria"]),
+        ("3.", "Osmosis is the movement of ___ across a membrane.",
+         ["A.  Glucose", "B.  Proteins", "C.  Water", "D.  Oxygen"]),
+        ("4.", "Which process does NOT require energy (ATP)?",
+         ["A.  Active transport", "B.  Endocytosis", "C.  Diffusion", "D.  Exocytosis"]),
     ]
 
-    for num, q, opts in mc_questions:
+    for num, q, opts in mc:
         c.setFont("Helvetica-Bold", 11)
         c.setFillColorRGB(0.1, 0.1, 0.1)
-        c.drawString(40, y, f"{num} {q}")
+        c.drawString(40, y, f"{num}  {q}")
         y -= 18
-        for opt in opts:
-            checkbox(c, 52, y - 2, 9)
-            c.setFont("Helvetica", 10.5)
-            c.setFillColorRGB(0.2, 0.2, 0.2)
-            c.drawString(68, y, opt)
-            y -= 16
-        y -= 10
-        if y < 200:
-            c.showPage()
-            y = H - 60
+        # Two options per row
+        for row in range(2):
+            for col in range(2):
+                idx = row * 2 + col
+                ox = 56 + col * 240
+                checkbox(c, ox, y - 2, 9)
+                c.setFont("Helvetica", 10.5)
+                c.setFillColorRGB(0.2, 0.2, 0.2)
+                c.drawString(ox + 14, y, opts[idx])
+            y -= 17
+        y -= 12
 
-    # ── Section B: Short Answer ──────────────────────────────────────────────
-    y -= 10
-    heading(c, "Section B  Short Answer  (40 pts)", y, size=13, color=(0.24, 0.27, 0.6))
-    y -= 6
-    rule(c, y, color=(0.24, 0.27, 0.6))
-    y -= 20
+    # ── Section B: Fill in the Blank (6 sentences) ───────────────────────────
+    y -= 8
+    heading(c, "Section B  Fill in the Blank  (30 pts)", y, size=13, color=(0.24, 0.27, 0.6))
+    y -= 5; rule(c, y, color=(0.24, 0.27, 0.6)); y -= 20
 
-    sa_questions = [
-        ("6.", "(10 pts)", "Describe the structure and function of the cell nucleus. Include the role of the nuclear envelope and nucleolus in your answer."),
-        ("7.", "(10 pts)", "Explain the difference between prokaryotic and eukaryotic cells. Give one example of each."),
-        ("8.", "(10 pts)", "What is the function of the endoplasmic reticulum (ER)? Distinguish between rough ER and smooth ER."),
-        ("9.", "(10 pts)", "Describe how mitochondria produce energy. Why are they called the 'powerhouse of the cell'?"),
+    blanks = [
+        ("5.", "The _______________ is the control center of the cell and contains DNA."),
+        ("6.", "Chloroplasts are found only in _______________ cells and carry out photosynthesis."),
+        ("7.", "The _______________ bilayer makes up the basic structure of the cell membrane."),
+        ("8.", "Ribosomes are responsible for synthesizing _______________."),
+        ("9.", "The process of a cell engulfing a large particle is called _______________."),
+        ("10.", "Cells without a membrane-bound nucleus are called _______________."),
     ]
 
-    for num, pts, q in sa_questions:
-        c.setFont("Helvetica-Bold", 11)
-        c.setFillColorRGB(0.1, 0.1, 0.1)
-        c.drawString(40, y, f"{num} {pts}  {q[:80]}")
-        if len(q) > 80:
-            c.setFont("Helvetica", 11)
-            c.drawString(52, y - 14, q[80:])
-            y -= 14
-        y -= 20
-        for _ in range(4):
-            answer_line(c, 52, y)
-            y -= 18
-        y -= 10
-        if y < 120:
-            c.showPage()
-            y = H - 60
+    for num, sent in blanks:
+        c.setFont("Helvetica-Bold", 10.5)
+        c.setFillColorRGB(0.15, 0.15, 0.15)
+        c.drawString(40, y, num)
+        c.setFont("Helvetica", 10.5)
+        c.drawString(62, y, sent)
+        y -= 26
 
-    # ── Section C: Diagram ───────────────────────────────────────────────────
-    y -= 6
-    heading(c, "Section C  Diagram Label  (20 pts)", y, size=13, color=(0.24, 0.27, 0.6))
-    y -= 6
-    rule(c, y, color=(0.24, 0.27, 0.6))
-    y -= 18
+    page_footer(c)
 
-    c.setFont("Helvetica", 11)
+    # ══════════════════════════════════════
+    # PAGE 2
+    # ══════════════════════════════════════
+    c.showPage()
+    page_header(c, 2)
+    y = H - 95
+
+    # ── Section C: Matching (連連看) ─────────────────────────────────────────
+    heading(c, "Section C  Matching  (30 pts)", y, size=13, color=(0.24, 0.27, 0.6))
+    y -= 5; rule(c, y, color=(0.24, 0.27, 0.6)); y -= 18
+
+    c.setFont("Helvetica", 10.5)
+    c.setFillColorRGB(0.3, 0.3, 0.3)
+    c.drawString(40, y, "Draw a line to match each organelle on the left with its correct function on the right.")
+    y -= 28
+
+    left_items = [
+        "11.  Mitochondria",
+        "12.  Ribosome",
+        "13.  Golgi apparatus",
+        "14.  Vacuole",
+        "15.  Cell membrane",
+        "16.  Nucleus",
+    ]
+    right_items = [
+        "A.  Packages and ships proteins",
+        "B.  Controls what enters/exits the cell",
+        "C.  Stores water and maintains turgor pressure",
+        "D.  Site of protein synthesis",
+        "E.  Contains DNA and controls cell activities",
+        "F.  Produces ATP through cellular respiration",
+    ]
+
+    row_h = 38
+    left_x  = 50
+    right_x = 310
+    col_w_l = 200
+    col_w_r = 240
+    dot_r   = 5
+
+    # Column headers
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColorRGB(0.24, 0.27, 0.6)
+    c.drawString(left_x, y, "Organelle")
+    c.drawString(right_x, y, "Function")
+    y -= 6
+    c.setStrokeColorRGB(0.24, 0.27, 0.6)
+    c.setLineWidth(0.8)
+    c.line(left_x, y, left_x + col_w_l, y)
+    c.line(right_x, y, right_x + col_w_r, y)
+    y -= 14
+
+    top_y = y
+    for i, (lbl, func) in enumerate(zip(left_items, right_items)):
+        cy_row = y - i * row_h
+
+        # Left item box
+        c.setFillColorRGB(0.94, 0.95, 1.0)
+        c.setStrokeColorRGB(0.70, 0.73, 0.90)
+        c.setLineWidth(0.8)
+        c.roundRect(left_x, cy_row - 14, col_w_l, 22, 4, stroke=1, fill=1)
+        c.setFont("Helvetica-Bold", 10.5)
+        c.setFillColorRGB(0.15, 0.15, 0.35)
+        c.drawString(left_x + 8, cy_row - 7, lbl)
+
+        # Right dot (connection point)
+        dot_lx = left_x + col_w_l + 2
+        c.setFillColorRGB(0.24, 0.27, 0.6)
+        c.circle(dot_lx, cy_row - 3, dot_r, stroke=0, fill=1)
+
+        # Right item box
+        c.setFillColorRGB(1.0, 0.97, 0.92)
+        c.setStrokeColorRGB(0.88, 0.78, 0.55)
+        c.setLineWidth(0.8)
+        c.roundRect(right_x, cy_row - 14, col_w_r, 22, 4, stroke=1, fill=1)
+        c.setFont("Helvetica", 10.5)
+        c.setFillColorRGB(0.20, 0.15, 0.05)
+        c.drawString(right_x + 8, cy_row - 7, func)
+
+        # Left dot on right column
+        dot_rx = right_x - 2
+        c.setFillColorRGB(0.80, 0.65, 0.25)
+        c.circle(dot_rx, cy_row - 3, dot_r, stroke=0, fill=1)
+
+    # Dashed line between columns (visual guide)
+    mid_x = (left_x + col_w_l + right_x) / 2
+    c.setStrokeColorRGB(0.75, 0.75, 0.75)
+    c.setLineWidth(0.6)
+    c.setDash(4, 4)
+    c.line(mid_x, top_y + 6, mid_x, top_y - len(left_items) * row_h + row_h - 10)
+    c.setDash()
+
+    y -= len(left_items) * row_h + 18
+
+    # Instruction note
+    c.setFont("Helvetica-Oblique", 9.5)
+    c.setFillColorRGB(0.45, 0.45, 0.45)
+    c.drawString(40, y, "Tip: Draw your connecting lines clearly from the blue dot (left) to the gold dot (right).")
+    y -= 40
+
+    # ── Score summary box ────────────────────────────────────────────────────
+    c.setStrokeColorRGB(0.24, 0.27, 0.6)
+    c.setFillColorRGB(0.96, 0.97, 1.0)
+    c.setLineWidth(1)
+    c.roundRect(40, y - 56, W - 80, 62, 6, stroke=1, fill=1)
+
+    c.setFont("Helvetica-Bold", 11)
+    c.setFillColorRGB(0.24, 0.27, 0.6)
+    c.drawString(56, y - 10, "Score Summary")
+
+    sections = [
+        ("Section A  Multiple Choice", "40 pts", "______ / 40"),
+        ("Section B  Fill in the Blank", "30 pts", "______ / 30"),
+        ("Section C  Matching", "30 pts", "______ / 30"),
+    ]
+    c.setFont("Helvetica", 10)
     c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawString(40, y, "10. (20 pts)  Label the parts of the animal cell diagram below. Write the name of each organelle on the blank lines provided.")
-    y -= 22
+    sx = 56
+    for label, pts, blank in sections:
+        c.drawString(sx, y - 26, label)
+        c.drawString(sx + 220, y - 26, pts)
+        c.drawString(sx + 310, y - 26, blank)
+        y -= 16
 
-    # Draw a simple cell diagram
-    cx, cy, rx, ry = 297, y - 95, 130, 90
-    c.setStrokeColorRGB(0.3, 0.3, 0.8)
-    c.setFillColorRGB(0.93, 0.95, 1.0)
-    c.setLineWidth(2)
-    c.ellipse(cx - rx, cy - ry, cx + rx, cy + ry, stroke=1, fill=1)
-
-    # Nucleus
-    c.setStrokeColorRGB(0.2, 0.2, 0.7)
-    c.setFillColorRGB(0.8, 0.85, 1.0)
-    c.circle(cx - 15, cy + 15, 32, stroke=1, fill=1)
-    c.setFont("Helvetica", 7)
-    c.setFillColorRGB(0.2, 0.2, 0.5)
-    c.drawCentredString(cx - 15, cy + 12, "Nucleus")
-
-    # Mitochondria (oval shape)
-    c.setStrokeColorRGB(0.7, 0.3, 0.2)
-    c.setFillColorRGB(1.0, 0.88, 0.82)
-    c.ellipse(cx + 40, cy - 10, cx + 90, cy + 25, stroke=1, fill=1)
-    c.setFont("Helvetica", 7)
-    c.setFillColorRGB(0.5, 0.2, 0.1)
-    c.drawCentredString(cx + 65, cy + 8, "Mito.")
-
-    # Golgi (stacked curves)
-    c.setStrokeColorRGB(0.2, 0.6, 0.3)
-    c.setFillColorRGB(0.85, 1.0, 0.88)
-    for i in range(3):
-        c.ellipse(cx - 80, cy - 5 + i * 8, cx - 30, cy + 5 + i * 8, stroke=1, fill=1)
-
-    # Label lines with blanks
-    labels = [
-        (cx - 15 + 32, cy + 30, cx + 10, cy + 60, "A"),
-        (cx + 65, cy + 25, cx + 80, cy + 55, "B"),
-        (cx - 55, cy + 10, cx - 90, cy + 50, "C"),
-        (cx, cy - ry, cx + 40, cy - ry - 25, "D"),
-        (cx - rx + 10, cy, cx - rx - 40, cy + 20, "E"),
-    ]
-    c.setStrokeColorRGB(0.4, 0.4, 0.4)
-    c.setLineWidth(0.7)
-    for x1, y1, x2, y2, lbl in labels:
-        c.line(x1, y1, x2, y2)
-        c.setFont("Helvetica-Bold", 9)
-        c.setFillColorRGB(0.1, 0.1, 0.1)
-        c.drawString(x2 + 3, y2, f"{lbl}: ___________________")
-
-    y -= 215
-
-    # Footer
-    c.setFont("Helvetica-Oblique", 9)
-    c.setFillColorRGB(0.5, 0.5, 0.5)
-    c.drawCentredString(W / 2, 30, "Good luck!  —  OmniNote Demo Exam")
+    page_footer(c, "Good luck!  —  OmniNote Demo Exam  •  Page 2 / 2")
 
     c.save()
     print(f"✓  {path}")
@@ -343,145 +405,11 @@ def make_contract():
 
 def make_reference_image():
     path = os.path.join(OUT, "scene5_room_reference.svg")
-    svg = '''<?xml version="1.0" encoding="UTF-8"?>
-<svg width="1200" height="800" viewBox="0 0 1200 800"
-     xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
-  <defs>
-    <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f5f0e8"/>
-      <stop offset="100%" stop-color="#e8dfc8"/>
-    </linearGradient>
-    <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#c8a97a"/>
-      <stop offset="100%" stop-color="#a07840"/>
-    </linearGradient>
-    <linearGradient id="sofaGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#4a6fa5"/>
-      <stop offset="100%" stop-color="#2d4d7a"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Sky / ceiling -->
-  <rect width="1200" height="800" fill="#d6e8f0"/>
-
-  <!-- Back wall -->
-  <polygon points="200,80 1000,80 1000,600 200,600" fill="url(#wallGrad)" stroke="#c8baa0" stroke-width="2"/>
-
-  <!-- Floor (perspective) -->
-  <polygon points="0,600 1200,600 1200,800 0,800" fill="url(#floorGrad)"/>
-  <!-- Floor planks -->
-  <g stroke="#8a5e30" stroke-width="0.8" opacity="0.4">
-    <line x1="0" y1="630" x2="1200" y2="630"/>
-    <line x1="0" y1="660" x2="1200" y2="660"/>
-    <line x1="0" y1="695" x2="1200" y2="695"/>
-    <line x1="0" y1="735" x2="1200" y2="735"/>
-    <line x1="0" y1="775" x2="1200" y2="775"/>
-    <line x1="200" y1="600" x2="200" y2="800"/>
-    <line x1="450" y1="600" x2="400" y2="800"/>
-    <line x1="650" y1="600" x2="600" y2="800"/>
-    <line x1="850" y1="600" x2="800" y2="800"/>
-    <line x1="1000" y1="600" x2="1000" y2="800"/>
-  </g>
-
-  <!-- Left wall -->
-  <polygon points="0,0 200,80 200,600 0,600" fill="#ddd6c0" stroke="#c0b090" stroke-width="1"/>
-
-  <!-- Right wall -->
-  <polygon points="1200,0 1000,80 1000,600 1200,600" fill="#d0c9b5" stroke="#b8ae96" stroke-width="1"/>
-
-  <!-- Large window on back wall -->
-  <rect x="480" y="110" width="240" height="300" fill="#a8d0e8" stroke="#8a7060" stroke-width="3"/>
-  <!-- Window panes -->
-  <line x1="600" y1="110" x2="600" y2="410" stroke="#8a7060" stroke-width="2"/>
-  <line x1="480" y1="260" x2="720" y2="260" stroke="#8a7060" stroke-width="2"/>
-  <!-- Window sill -->
-  <rect x="470" y="408" width="260" height="12" fill="#b8a898" rx="2"/>
-  <!-- Window light effect -->
-  <polygon points="480,110 720,110 850,600 350,600" fill="rgba(255,240,200,0.12)"/>
-
-  <!-- Curtains -->
-  <path d="M480,110 Q460,200 475,300 Q465,400 480,410" fill="#c8b4a0" stroke="#a89080" stroke-width="1"/>
-  <path d="M720,110 Q740,200 725,300 Q735,400 720,410" fill="#c8b4a0" stroke="#a89080" stroke-width="1"/>
-
-  <!-- Sofa (main) -->
-  <rect x="310" y="480" width="580" height="120" fill="url(#sofaGrad)" rx="10"/>
-  <rect x="310" y="450" width="580" height="50" fill="#3d5f8f" rx="8"/>
-  <!-- Sofa arms -->
-  <rect x="290" y="450" width="30" height="150" fill="#2d4d7a" rx="5"/>
-  <rect x="880" y="450" width="30" height="150" fill="#2d4d7a" rx="5"/>
-  <!-- Sofa cushions -->
-  <rect x="320" y="455" width="175" height="40" fill="#5580b5" rx="5"/>
-  <rect x="512" y="455" width="175" height="40" fill="#5580b5" rx="5"/>
-  <rect x="703" y="455" width="175" height="40" fill="#5580b5" rx="5"/>
-  <!-- Sofa legs -->
-  <rect x="330" y="595" width="15" height="20" fill="#1a2a40" rx="2"/>
-  <rect x="855" y="595" width="15" height="20" fill="#1a2a40" rx="2"/>
-
-  <!-- Coffee table -->
-  <rect x="430" y="575" width="340" height="10" fill="#8b6540" rx="3"/>
-  <rect x="440" y="585" width="10" height="25" fill="#6b4520"/>
-  <rect x="750" y="585" width="10" height="25" fill="#6b4520"/>
-  <!-- Table items: book + small plant -->
-  <rect x="460" y="560" width="55" height="15" fill="#e85c50" rx="2"/>
-  <rect x="465" y="548" width="45" height="14" fill="#f07060" rx="2"/>
-  <circle cx="700" cy="558" r="14" fill="#4a9e5c"/>
-  <rect x="696" y="568" width="8" height="12" fill="#6b4520"/>
-
-  <!-- Floor lamp (right) -->
-  <rect x="880" y="350" width="8" height="250" fill="#b0a090" rx="2"/>
-  <ellipse cx="884" cy="350" rx="35" ry="20" fill="#f5e8c0" stroke="#c0b090" stroke-width="1.5"/>
-  <ellipse cx="884" cy="600" rx="20" ry="5" fill="#8a7060"/>
-  <!-- Lamp glow -->
-  <ellipse cx="884" cy="370" rx="60" ry="40" fill="rgba(255,240,180,0.15)"/>
-
-  <!-- Side table + plant (left) -->
-  <rect x="200" y="520" width="80" height="80" fill="#9a7850" rx="4"/>
-  <rect x="190" y="516" width="100" height="8" fill="#b09060" rx="2"/>
-  <!-- Potted plant -->
-  <rect x="228" y="490" width="24" height="26" fill="#b07850" rx="3"/>
-  <ellipse cx="240" cy="488" rx="28" ry="22" fill="#3a8048"/>
-  <ellipse cx="225" cy="478" rx="18" ry="14" fill="#4a9858"/>
-  <ellipse cx="255" cy="480" rx="16" ry="12" fill="#2d6e38"/>
-
-  <!-- Wall art (back wall, left) -->
-  <rect x="240" y="150" width="160" height="110" fill="#f0ebe0" stroke="#8a7060" stroke-width="3"/>
-  <rect x="248" y="158" width="144" height="94" fill="#e8d8b8"/>
-  <!-- Abstract art content -->
-  <circle cx="290" cy="195" r="25" fill="#c87040" opacity="0.7"/>
-  <circle cx="350" cy="210" r="18" fill="#4870b0" opacity="0.6"/>
-  <rect x="265" y="220" width="120" height="15" fill="#60a040" opacity="0.5" rx="3"/>
-
-  <!-- Wall art (back wall, right) -->
-  <rect x="800" y="130" width="130" height="180" fill="#f0ebe0" stroke="#8a7060" stroke-width="3"/>
-  <rect x="808" y="138" width="114" height="164" fill="#1a2a3a"/>
-  <!-- Night city silhouette -->
-  <rect x="810" y="240" width="20" height="60" fill="#f5c842"/>
-  <rect x="835" y="220" width="15" height="80" fill="#e0e0e0"/>
-  <rect x="855" y="250" width="25" height="50" fill="#f5c842"/>
-  <rect x="885" y="230" width="18" height="70" fill="#e0e0e0"/>
-  <rect x="808" y="290" width="114" height="12" fill="#0a1520"/>
-  <!-- Stars -->
-  <circle cx="820" cy="155" r="2" fill="white"/>
-  <circle cx="850" cy="165" r="1.5" fill="white"/>
-  <circle cx="880" cy="148" r="2" fill="white"/>
-  <circle cx="895" cy="170" r="1.5" fill="white"/>
-  <circle cx="912" cy="155" r="2" fill="white"/>
-
-  <!-- Throw pillow on sofa -->
-  <rect x="540" y="450" width="45" height="40" fill="#e8c870" rx="4"/>
-  <line x1="540" y1="470" x2="585" y2="470" stroke="#c8a840" stroke-width="0.8"/>
-  <line x1="562" y1="450" x2="562" y2="490" stroke="#c8a840" stroke-width="0.8"/>
-
-  <!-- Rug -->
-  <ellipse cx="600" cy="595" rx="260" ry="25" fill="#c04030" opacity="0.35"/>
-
-  <!-- Room label (subtle watermark for video reference) -->
-  <text x="600" y="760" text-anchor="middle" font-size="13" fill="rgba(80,60,40,0.4)"
-        font-style="italic">Living Room — Interior Design Reference  |  OmniNote Scene 5</text>
-</svg>'''
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(svg)
-    print(f"✓  {path}")
+    # Skip regeneration — detailed SVG is maintained manually.
+    if os.path.exists(path):
+        print(f"✓  {path} (kept existing)")
+        return
+    print(f"⚠  {path} not found — please restore it manually")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SCENE 1 — Biology class notes (visual reference HTML)
