@@ -214,6 +214,33 @@
     .export-divider { height: 1px; background: #e5e7eb; margin: 4px 8px; }
 
     /* ── PDF Import Modal ─────────────────────────────────────────────────── */
+    .cloud-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .cloud-modal-title { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+    .cloud-modal-close {
+      margin-left: auto;
+      background: none; border: none; font-size: 18px; color: #6b7280;
+      cursor: pointer; padding: 4px 8px; border-radius: 6px; line-height: 1;
+    }
+    .cloud-modal-close:hover { background: #f3f4f6; color: #374151; }
+    .cloud-modal-footer {
+      display: flex; justify-content: flex-end; align-items: center;
+      gap: 10px; flex-shrink: 0; padding-top: 4px;
+    }
+    .cloud-btn-cancel {
+      background: #f3f4f6; color: #374151; border: none;
+      border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .cloud-btn-cancel:hover { background: #e5e7eb; }
+    .cloud-btn-primary {
+      background: #6366f1; color: #fff; border: none;
+      border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .cloud-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+    .cloud-btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+    .cloud-error { color: #dc2626; font-size: 13px; margin: 0; }
     .modal-overlay {
       position: fixed; inset: 0; z-index: 300;
       background: rgba(0,0,0,.45);
