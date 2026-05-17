@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="800" viewBox="0 0 1200 800"
+     xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <defs>
+    <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f5f0e8"/>
+      <stop offset="100%" stop-color="#e8dfc8"/>
+    </linearGradient>
+    <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c8a97a"/>
+      <stop offset="100%" stop-color="#a07840"/>
+    </linearGradient>
+    <linearGradient id="sofaGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a6fa5"/>
+      <stop offset="100%" stop-color="#2d4d7a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sky / ceiling -->
+  <rect width="1200" height="800" fill="#d6e8f0"/>
+
+  <!-- Back wall -->
+  <polygon points="200,80 1000,80 1000,600 200,600" fill="url(#wallGrad)" stroke="#c8baa0" stroke-width="2"/>
+
+  <!-- Floor (perspective) -->
+  <polygon points="0,600 1200,600 1200,800 0,800" fill="url(#floorGrad)"/>
+  <!-- Floor planks -->
+  <g stroke="#8a5e30" stroke-width="0.8" opacity="0.4">
+    <line x1="0" y1="630" x2="1200" y2="630"/>
+    <line x1="0" y1="660" x2="1200" y2="660"/>
+    <line x1="0" y1="695" x2="1200" y2="695"/>
+    <line x1="0" y1="735" x2="1200" y2="735"/>
+    <line x1="0" y1="775" x2="1200" y2="775"/>
+    <line x1="200" y1="600" x2="200" y2="800"/>
+    <line x1="450" y1="600" x2="400" y2="800"/>
+    <line x1="650" y1="600" x2="600" y2="800"/>
+    <line x1="850" y1="600" x2="800" y2="800"/>
+    <line x1="1000" y1="600" x2="1000" y2="800"/>
+  </g>
+
+  <!-- Left wall -->
+  <polygon points="0,0 200,80 200,600 0,600" fill="#ddd6c0" stroke="#c0b090" stroke-width="1"/>
+
+  <!-- Right wall -->
+  <polygon points="1200,0 1000,80 1000,600 1200,600" fill="#d0c9b5" stroke="#b8ae96" stroke-width="1"/>
+
+  <!-- Large window on back wall -->
+  <rect x="480" y="110" width="240" height="300" fill="#a8d0e8" stroke="#8a7060" stroke-width="3"/>
+  <!-- Window panes -->
+  <line x1="600" y1="110" x2="600" y2="410" stroke="#8a7060" stroke-width="2"/>
+  <line x1="480" y1="260" x2="720" y2="260" stroke="#8a7060" stroke-width="2"/>
+  <!-- Window sill -->
+  <rect x="470" y="408" width="260" height="12" fill="#b8a898" rx="2"/>
+  <!-- Window light effect -->
+  <polygon points="480,110 720,110 850,600 350,600" fill="rgba(255,240,200,0.12)"/>
+
+  <!-- Curtains -->
+  <path d="M480,110 Q460,200 475,300 Q465,400 480,410" fill="#c8b4a0" stroke="#a89080" stroke-width="1"/>
+  <path d="M720,110 Q740,200 725,300 Q735,400 720,410" fill="#c8b4a0" stroke="#a89080" stroke-width="1"/>
+
+  <!-- Sofa (main) -->
+  <rect x="310" y="480" width="580" height="120" fill="url(#sofaGrad)" rx="10"/>
+  <rect x="310" y="450" width="580" height="50" fill="#3d5f8f" rx="8"/>
+  <!-- Sofa arms -->
+  <rect x="290" y="450" width="30" height="150" fill="#2d4d7a" rx="5"/>
+  <rect x="880" y="450" width="30" height="150" fill="#2d4d7a" rx="5"/>
+  <!-- Sofa cushions -->
+  <rect x="320" y="455" width="175" height="40" fill="#5580b5" rx="5"/>
+  <rect x="512" y="455" width="175" height="40" fill="#5580b5" rx="5"/>
+  <rect x="703" y="455" width="175" height="40" fill="#5580b5" rx="5"/>
+  <!-- Sofa legs -->
+  <rect x="330" y="595" width="15" height="20" fill="#1a2a40" rx="2"/>
+  <rect x="855" y="595" width="15" height="20" fill="#1a2a40" rx="2"/>
+
+  <!-- Coffee table -->
+  <rect x="430" y="575" width="340" height="10" fill="#8b6540" rx="3"/>
+  <rect x="440" y="585" width="10" height="25" fill="#6b4520"/>
+  <rect x="750" y="585" width="10" height="25" fill="#6b4520"/>
+  <!-- Table items: book + small plant -->
+  <rect x="460" y="560" width="55" height="15" fill="#e85c50" rx="2"/>
+  <rect x="465" y="548" width="45" height="14" fill="#f07060" rx="2"/>
+  <circle cx="700" cy="558" r="14" fill="#4a9e5c"/>
+  <rect x="696" y="568" width="8" height="12" fill="#6b4520"/>
+
+  <!-- Floor lamp (right) -->
+  <rect x="880" y="350" width="8" height="250" fill="#b0a090" rx="2"/>
+  <ellipse cx="884" cy="350" rx="35" ry="20" fill="#f5e8c0" stroke="#c0b090" stroke-width="1.5"/>
+  <ellipse cx="884" cy="600" rx="20" ry="5" fill="#8a7060"/>
+  <!-- Lamp glow -->
+  <ellipse cx="884" cy="370" rx="60" ry="40" fill="rgba(255,240,180,0.15)"/>
+
+  <!-- Side table + plant (left) -->
+  <rect x="200" y="520" width="80" height="80" fill="#9a7850" rx="4"/>
+  <rect x="190" y="516" width="100" height="8" fill="#b09060" rx="2"/>
+  <!-- Potted plant -->
+  <rect x="228" y="490" width="24" height="26" fill="#b07850" rx="3"/>
+  <ellipse cx="240" cy="488" rx="28" ry="22" fill="#3a8048"/>
+  <ellipse cx="225" cy="478" rx="18" ry="14" fill="#4a9858"/>
+  <ellipse cx="255" cy="480" rx="16" ry="12" fill="#2d6e38"/>
+
+  <!-- Wall art (back wall, left) -->
+  <rect x="240" y="150" width="160" height="110" fill="#f0ebe0" stroke="#8a7060" stroke-width="3"/>
+  <rect x="248" y="158" width="144" height="94" fill="#e8d8b8"/>
+  <!-- Abstract art content -->
+  <circle cx="290" cy="195" r="25" fill="#c87040" opacity="0.7"/>
+  <circle cx="350" cy="210" r="18" fill="#4870b0" opacity="0.6"/>
+  <rect x="265" y="220" width="120" height="15" fill="#60a040" opacity="0.5" rx="3"/>
+
+  <!-- Wall art (back wall, right) -->
+  <rect x="800" y="130" width="130" height="180" fill="#f0ebe0" stroke="#8a7060" stroke-width="3"/>
+  <rect x="808" y="138" width="114" height="164" fill="#1a2a3a"/>
+  <!-- Night city silhouette -->
+  <rect x="810" y="240" width="20" height="60" fill="#f5c842"/>
+  <rect x="835" y="220" width="15" height="80" fill="#e0e0e0"/>
+  <rect x="855" y="250" width="25" height="50" fill="#f5c842"/>
+  <rect x="885" y="230" width="18" height="70" fill="#e0e0e0"/>
+  <rect x="808" y="290" width="114" height="12" fill="#0a1520"/>
+  <!-- Stars -->
+  <circle cx="820" cy="155" r="2" fill="white"/>
+  <circle cx="850" cy="165" r="1.5" fill="white"/>
+  <circle cx="880" cy="148" r="2" fill="white"/>
+  <circle cx="895" cy="170" r="1.5" fill="white"/>
+  <circle cx="912" cy="155" r="2" fill="white"/>
+
+  <!-- Throw pillow on sofa -->
+  <rect x="540" y="450" width="45" height="40" fill="#e8c870" rx="4"/>
+  <line x1="540" y1="470" x2="585" y2="470" stroke="#c8a840" stroke-width="0.8"/>
+  <line x1="562" y1="450" x2="562" y2="490" stroke="#c8a840" stroke-width="0.8"/>
+
+  <!-- Rug -->
+  <ellipse cx="600" cy="595" rx="260" ry="25" fill="#c04030" opacity="0.35"/>
+
+  <!-- Room label (subtle watermark for video reference) -->
+  <text x="600" y="760" text-anchor="middle" font-size="13" fill="rgba(80,60,40,0.4)"
+        font-style="italic">Living Room — Interior Design Reference  |  OmniNote Scene 5</text>
+</svg>

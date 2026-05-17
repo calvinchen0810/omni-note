@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 3 — Canvas Preview: Mind Map</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #e8eaed; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .page {
+    background: white; width: 1200px; height: 850px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,.25);
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .node {
+    position: absolute;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-weight: 600;
+    box-shadow: 0 3px 12px rgba(0,0,0,.15);
+    cursor: default;
+    padding: 8px 14px;
+    line-height: 1.3;
+  }
+  .center {
+    width: 160px; height: 60px;
+    left: 520px; top: 395px;
+    background: #6366f1; color: white;
+    font-size: 16px;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(99,102,241,.45);
+  }
+  .branch { font-size: 13px; width: 130px; min-height: 44px; }
+
+  /* Copy — teal */
+  .copy { background: #e0f7f4; color: #0e7c6e; border: 2px solid #4dd0c4; left: 180px; top: 145px; }
+  .copy-sub { background: #f0fdfb; color: #0e7c6e; border: 1.5px solid #9ae8e0; font-weight: 400; font-size: 11.5px; width: 115px; }
+  /* Design — purple */
+  .design { background: #ede9fe; color: #5b21b6; border: 2px solid #a78bfa; left: 180px; top: 555px; }
+  .design-sub { background: #f5f3ff; color: #5b21b6; border: 1.5px solid #c4b5fd; font-weight: 400; font-size: 11.5px; width: 115px; }
+  /* Budget — orange */
+  .budget { background: #fff7ed; color: #9a3412; border: 2px solid #fb923c; left: 870px; top: 145px; }
+  .budget-sub { background: #fff9f5; color: #9a3412; border: 1.5px solid #fca97a; font-weight: 400; font-size: 11.5px; width: 115px; }
+  /* Timeline — green */
+  .timeline { background: #f0fdf4; color: #166534; border: 2px solid #4ade80; left: 870px; top: 555px; }
+  .timeline-sub { background: #f5fef7; color: #166534; border: 1.5px solid #86efac; font-weight: 400; font-size: 11.5px; width: 115px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <svg id="lines" xmlns="http://www.w3.org/2000/svg">
+    <!-- Center to Copy -->
+    <path d="M 520 425 C 420 425 380 195 310 175" stroke="#4dd0c4" stroke-width="2.5" fill="none" opacity="0.7"/>
+    <!-- Center to Design -->
+    <path d="M 520 440 C 420 440 380 580 310 580" stroke="#a78bfa" stroke-width="2.5" fill="none" opacity="0.7"/>
+    <!-- Center to Budget -->
+    <path d="M 680 425 C 780 425 820 195 870 175" stroke="#fb923c" stroke-width="2.5" fill="none" opacity="0.7"/>
+    <!-- Center to Timeline -->
+    <path d="M 680 440 C 780 440 820 580 870 580" stroke="#4ade80" stroke-width="2.5" fill="none" opacity="0.7"/>
+
+    <!-- Copy sub-branches -->
+    <path d="M 245 148 C 180 120 150 95 115 85" stroke="#4dd0c4" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 180 170 C 115 170 90 175 55 178" stroke="#4dd0c4" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 245 198 C 180 220 150 240 115 248" stroke="#4dd0c4" stroke-width="1.8" fill="none" opacity="0.55"/>
+
+    <!-- Design sub-branches -->
+    <path d="M 245 558 C 180 530 150 510 115 498" stroke="#a78bfa" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 180 575 C 115 572 90 568 55 565" stroke="#a78bfa" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 245 598 C 180 618 150 635 115 642" stroke="#a78bfa" stroke-width="1.8" fill="none" opacity="0.55"/>
+
+    <!-- Budget sub-branches -->
+    <path d="M 1000 148 C 1060 120 1085 95 1100 85" stroke="#fb923c" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 1000 170 C 1060 168 1090 172 1120 175" stroke="#fb923c" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 1000 200 C 1060 220 1080 240 1100 248" stroke="#fb923c" stroke-width="1.8" fill="none" opacity="0.55"/>
+
+    <!-- Timeline sub-branches -->
+    <path d="M 1000 558 C 1060 528 1085 505 1100 495" stroke="#4ade80" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 1000 575 C 1060 572 1090 568 1120 565" stroke="#4ade80" stroke-width="1.8" fill="none" opacity="0.55"/>
+    <path d="M 1000 600 C 1060 618 1080 638 1100 645" stroke="#4ade80" stroke-width="1.8" fill="none" opacity="0.55"/>
+  </svg>
+
+  <!-- Center node -->
+  <div class="node center">✦ New Campaign</div>
+
+  <!-- Branch: Copy -->
+  <div class="node branch copy">📝 Copy</div>
+  <div class="node branch copy-sub" style="left:18px;top:63px">Tagline ideas</div>
+  <div class="node branch copy-sub" style="left:18px;top:150px">Blog posts ×3</div>
+  <div class="node branch copy-sub" style="left:18px;top:220px">Social captions</div>
+
+  <!-- Branch: Design -->
+  <div class="node branch design">🎨 Design</div>
+  <div class="node branch design-sub" style="left:18px;top:468px">Brand palette</div>
+  <div class="node branch design-sub" style="left:18px;top:538px">Banner 1200×628</div>
+  <div class="node branch design-sub" style="left:18px;top:612px">Video thumbnail</div>
+
+  <!-- Branch: Budget -->
+  <div class="node branch budget">💰 Budget</div>
+  <div class="node branch budget-sub" style="left:1070px;top:63px">Total: $8,000</div>
+  <div class="node branch budget-sub" style="left:1087px;top:148px">Ads 60%</div>
+  <div class="node branch budget-sub" style="left:1070px;top:218px">Design 25%</div>
+
+  <!-- Branch: Timeline -->
+  <div class="node branch timeline">📅 Timeline</div>
+  <div class="node branch timeline-sub" style="left:1070px;top:465px">Kick-off Jun 1</div>
+  <div class="node branch timeline-sub" style="left:1087px;top:536px">Launch Jul 4</div>
+  <div class="node branch timeline-sub" style="left:1070px;top:615px">Review Jul 18</div>
+
+  <!-- Annotation sticky note -->
+  <div style="position:absolute;right:400px;top:30px;background:#fff6bf;border-radius:8px;
+              padding:8px 12px;font-size:12px;color:#555;width:165px;
+              box-shadow:2px 3px 10px rgba(0,0,0,.15);transform:rotate(-2deg)">
+    <div style="height:20px;background:rgba(0,0,0,0.07);margin:-8px -12px 8px;border-radius:8px 8px 0 0;"></div>
+    💡 A/B test two taglines<br>before final launch!
+  </div>
+</div>
+</body>
+</html>
