@@ -115,6 +115,17 @@ export function reducer(state, action) {
         pages: state.pages.map((p) => p.id === action.tempId ? action.page : p),
       };
 
+    case "SET_PAGES":
+      return {
+        ...state,
+        pages: action.pages,
+        currentPageIndex: action.startIndex != null
+          ? Math.min(action.startIndex, action.pages.length - 1)
+          : Math.min(state.currentPageIndex, Math.max(0, action.pages.length - 1)),
+        undoStack: [],
+        redoStack: [],
+      };
+
     case "UPDATE_PAGE_TITLE":
       return {
         ...state,

@@ -5,11 +5,12 @@ import { initialState, reducer } from "./store.js";
 import { api } from "./api.js";
 import { uid, renderAllStrokes, drawPageBackground } from "./canvas-utils.js";
 
-import { NotebookList } from "./components/NotebookList.js";
+import { NotebookList }    from "./components/NotebookList.js";
 import { MindMapCanvas }   from "./components/MindMapCanvas.js";
-import { Toolbar }      from "./components/Toolbar.js";
-import { PageTabs }     from "./components/PageTabs.js";
-import { StickyNote }   from "./components/StickyNote.js";
+import { Toolbar }         from "./components/Toolbar.js";
+import { PageTabs }        from "./components/PageTabs.js";
+import { StickyNote }      from "./components/StickyNote.js";
+import { PdfImportModal }  from "./components/PdfImportModal.js";
 import { exportCurrentPageAsPng, exportAllPagesAsPdf } from "./export-utils.js";
 
 const PAGE_WIDTH = 1200;
@@ -24,6 +25,7 @@ function App() {
   const [notebooks, setNotebooks]   = useReducer((s, a) => a, []);
   const [zoom, setZoom] = useState(1);
   const [toolbarWidth, setToolbarWidth] = useState(58);
+  const [showPdfImport, setShowPdfImport] = useState(false);
   const saveTimerRef = useRef(null);
   const canvasViewportRef = useRef(null);
   const stateRef = useRef(state);
@@ -267,6 +269,19 @@ function App() {
     }
   }
 
+  // ── PDF import ────────────────────────────────────────────────────────────
+
+  async function handlePdfImported() {
+    const prevCount = state.pages.length;
+    setShowPdfImport(false);
+    try {
+      const pages = await api.listPages(state.notebook.id);
+      dispatch({ type: "SET_PAGES", pages, startIndex: prevCount });
+    } catch (e) {
+      console.error("reload pages after pdf import:", e);
+    }
+  }
+
   // ── Back to list ──────────────────────────────────────────────────────────
 
   async function handleBack() {
@@ -382,6 +397,18 @@ function App() {
           onUploadImage: handleUploadBackgroundImage,
           onRemoveImage: handleRemoveBackgroundImage,
         }),
+        h("button", {
+          class: "icon-btn",
+          title: "匯入 PDF",
+          onClick: () => setShowPdfImport(true),
+        },
+          h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+            h("path", { d: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" }),
+            h("polyline", { points: "14 2 14 8 20 8" }),
+            h("line",     { x1: 12, y1: 18, x2: 12, y2: 12 }),
+            h("polyline", { points: "9 15 12 12 15 15" })
+          )
+        ),
         h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf }),
         h("div", {
           class: "save-indicator",
@@ -458,6 +485,12 @@ function App() {
       onAddPage: handleAddPage,
       onDeletePage: handleDeletePage,
       onRenamePage: handleRenameTab,
+    }),
+
+    showPdfImport && h(PdfImportModal, {
+      notebookId: state.notebook?.id,
+      onClose: () => setShowPdfImport(false),
+      onImported: handlePdfImported,
     }),
   );
 }
