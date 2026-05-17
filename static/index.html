@@ -221,20 +221,20 @@
     .canvas-wrapper {
       flex: 1; position: relative; overflow: auto;
       background: #e8eaed;
+      scrollbar-gutter: stable;
     }
     .canvas-wrapper.is-pan-mode {
       cursor: grab;
     }
     .page-stage {
       min-width: 100%; min-height: 100%;
-      display: flex; justify-content: flex-start;
+      display: flex; justify-content: safe center;
       align-items: flex-start;
       padding: 28px;
     }
     .page-zoom-layer {
       position: relative;
       flex: 0 0 auto;
-      margin: 0 auto;
     }
     .page-content {
       position: relative;

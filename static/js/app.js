@@ -47,7 +47,11 @@ function App() {
     requestAnimationFrame(() => {
       const vp = canvasViewportRef.current;
       if (!vp) return;
-      const fit = Math.min(vp.clientWidth / PAGE_WIDTH, vp.clientHeight / PAGE_HEIGHT) * 0.95;
+      const pad = 56; // 28px padding × 2 sides
+      const fit = Math.min(
+        (vp.clientWidth  - pad) / PAGE_WIDTH,
+        (vp.clientHeight - pad) / PAGE_HEIGHT,
+      );
       setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fit)));
     });
   }, [state.view]);
@@ -464,7 +468,11 @@ function ZoomMenu({ zoom, onZoom, viewport }) {
   function fitZoom() {
     const vp = viewport?.current;
     if (!vp) return onZoom(1);
-    const fit = Math.min(vp.clientWidth / PAGE_WIDTH, vp.clientHeight / PAGE_HEIGHT) * 0.95;
+    const pad = 56;
+    const fit = Math.min(
+      (vp.clientWidth  - pad) / PAGE_WIDTH,
+      (vp.clientHeight - pad) / PAGE_HEIGHT,
+    );
     onZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fit)));
   }
 
