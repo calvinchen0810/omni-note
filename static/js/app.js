@@ -255,7 +255,7 @@ function App() {
   async function handleExportPng(withBg) {
     const page = state.pages[state.currentPageIndex];
     if (!page) return;
-    const name = `${state.notebook?.title ?? "note"}-第${state.currentPageIndex + 1}頁`;
+    const name = `${state.notebook?.title ?? "note"}-page${state.currentPageIndex + 1}`;
     await exportCurrentPageAsPng(page, name, withBg);
   }
 
@@ -265,7 +265,7 @@ function App() {
       await exportAllPagesAsPdf(state.pages, state.notebook?.title ?? "note", withBg);
     } catch (e) {
       console.error("export pdf:", e);
-      alert("PDF 匯出失敗，請確認網路連線後再試。");
+      alert("PDF export failed. Please check your network connection and try again.");
     }
   }
 
@@ -370,12 +370,12 @@ function App() {
   return h("div", { class: "app editor" },
     h("div", { class: "top-bar" },
       h("div", { class: "top-bar-leading" },
-        h("button", { class: "btn-back", onClick: handleBack, title: "返回筆記本列表" },
+        h("button", { class: "btn-back", onClick: handleBack, title: "Back to notebooks" },
           h("svg", { class: "btn-back-icon", viewBox: "0 0 24 24", width: 18, height: 18, fill: "none", stroke: "currentColor", "stroke-width": 2 },
             h("path", { d: "M15 18l-6-6 6-6" }),
             h("path", { d: "M21 12H9" })
           ),
-          h("span", { class: "btn-back-label" }, "返回")
+          h("span", { class: "btn-back-label" }, "Back")
         ),
         h("div", { class: "notebook-title" }, state.notebook?.title ?? "")
       ),
@@ -399,7 +399,7 @@ function App() {
         }),
         h("button", {
           class: "icon-btn",
-          title: "匯入 PDF",
+          title: "Import PDF",
           onClick: () => setShowPdfImport(true),
         },
           h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
@@ -412,8 +412,8 @@ function App() {
         h(ExportMenu, { onExportPng: handleExportPng, onExportPdf: handleExportPdf }),
         h("div", {
           class: "save-indicator",
-          title: state.isDirty ? "未儲存" : "已儲存",
-          "aria-label": state.isDirty ? "未儲存" : "已儲存",
+          title: state.isDirty ? "Unsaved" : "Saved",
+          "aria-label": state.isDirty ? "Unsaved" : "Saved",
         },
           h("span", {
             class: ["save-status-dot", state.isDirty ? "saving" : "saved"].join(" "),
@@ -516,7 +516,7 @@ function ZoomMenu({ zoom, onZoom, viewport }) {
   return h("div", { class: "zoom-menu-wrap" },
     h("button", {
       class: "icon-btn",
-      title: `縮放 (${Math.round(zoom * 100)}%)`,
+      title: `Zoom (${Math.round(zoom * 100)}%)`,
       onClick: () => setOpen(!open),
     },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
@@ -532,7 +532,7 @@ function ZoomMenu({ zoom, onZoom, viewport }) {
         h("button", {
           class: "zoom-reset",
           onClick: fitZoom,
-        }, "適合")
+        }, "Fit")
       ),
       h("input", {
         class: "zoom-slider",
@@ -582,7 +582,7 @@ function ExportMenu({ onExportPng, onExportPdf }) {
   return h("div", { class: "export-menu-wrap" },
     h("button", {
       class: "icon-btn",
-      title: "匯出",
+      title: "Export",
       onClick: () => setOpen(!open),
       disabled: loading,
     },
@@ -601,7 +601,7 @@ function ExportMenu({ onExportPng, onExportPdf }) {
           checked: withBg,
           onChange: (e) => setWithBg(e.target.checked),
         }),
-        h("span", null, "包含背景")
+        h("span", null, "Include background")
       ),
       h("div", { class: "export-divider" }),
       h("button", {
@@ -610,8 +610,8 @@ function ExportMenu({ onExportPng, onExportPdf }) {
       },
         h("span", { class: "export-icon" }, "🖼"),
         h("div", null,
-          h("div", { class: "export-label" }, "匯出為圖片 (PNG)"),
-          h("div", { class: "export-hint" }, "目前頁面")
+          h("div", { class: "export-label" }, "Export as image (PNG)"),
+          h("div", { class: "export-hint" }, "Current page")
         )
       ),
       h("button", {
@@ -620,8 +620,8 @@ function ExportMenu({ onExportPng, onExportPdf }) {
       },
         h("span", { class: "export-icon" }, "📄"),
         h("div", null,
-          h("div", { class: "export-label" }, "匯出為 PDF"),
-          h("div", { class: "export-hint" }, "所有頁面")
+          h("div", { class: "export-label" }, "Export as PDF"),
+          h("div", { class: "export-hint" }, "All pages")
         )
       )
     ),
@@ -632,10 +632,10 @@ function ExportMenu({ onExportPng, onExportPdf }) {
 // ── Background Picker ─────────────────────────────────────────────────────────
 
 const BG_TYPES = [
-  { type: "blank",  label: "空白" },
-  { type: "ruled",  label: "橫線" },
-  { type: "grid",   label: "方格" },
-  { type: "dot",    label: "點陣" },
+  { type: "blank",  label: "Blank" },
+  { type: "ruled",  label: "Ruled" },
+  { type: "grid",   label: "Grid" },
+  { type: "dot",    label: "Dot" },
 ];
 
 function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
@@ -665,7 +665,7 @@ function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
   return h("div", { class: "bg-menu-wrap" },
     h("button", {
       class: ["icon-btn", open && "active"].filter(Boolean).join(" "),
-      title: "背景",
+      title: "Background",
       onClick: () => setOpen(!open),
     },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
@@ -676,7 +676,7 @@ function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
     ),
     open && h("div", { class: "bg-dropdown" },
 
-      h("div", { class: "bg-section-label" }, "樣式"),
+      h("div", { class: "bg-section-label" }, "Style"),
       h("div", { class: "bg-type-row" },
         BG_TYPES.map(({ type, label }) =>
           h("button", {
@@ -689,7 +689,7 @@ function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
 
       hasSliders && h("div", { class: "bg-sliders" },
         h("div", { class: "bg-slider-row" },
-          h("span", { class: "bg-slider-label" }, "間距"),
+          h("span", { class: "bg-slider-label" }, "Spacing"),
           h("input", {
             type: "range", min: 20, max: 100, step: 2,
             value: bg.spacing ?? 56,
@@ -699,7 +699,7 @@ function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
         ),
         bg.type === "dot"
           ? h("div", { class: "bg-slider-row" },
-              h("span", { class: "bg-slider-label" }, "點大小"),
+              h("span", { class: "bg-slider-label" }, "Dot size"),
               h("input", {
                 type: "range", min: 0.5, max: 4, step: 0.5,
                 value: bg.size ?? 1.5,
@@ -708,7 +708,7 @@ function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
               h("span", { class: "bg-slider-value" }, `${bg.size ?? 1.5}`)
             )
           : h("div", { class: "bg-slider-row" },
-              h("span", { class: "bg-slider-label" }, "粗細"),
+              h("span", { class: "bg-slider-label" }, "Thickness"),
               h("input", {
                 type: "range", min: 0.5, max: 3, step: 0.5,
                 value: bg.thickness ?? 1,
@@ -719,12 +719,12 @@ function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
       ),
 
       h("div", { class: "bg-divider" }),
-      h("div", { class: "bg-section-label" }, "背景圖片"),
+      h("div", { class: "bg-section-label" }, "Background image"),
 
       isImage
         ? h("div", { class: "bg-sliders" },
             h("div", { class: "bg-slider-row" },
-              h("span", { class: "bg-slider-label" }, "縮放"),
+              h("span", { class: "bg-slider-label" }, "Scale"),
               h("input", {
                 type: "range", min: 20, max: 200, step: 5,
                 value: Math.round((bg.scale ?? 1) * 100),
@@ -735,12 +735,12 @@ function BackgroundPicker({ page, onUpdate, onUploadImage, onRemoveImage }) {
             h("button", {
               class: "bg-remove-btn",
               onClick: () => { onRemoveImage(); setOpen(false); },
-            }, "移除圖片")
+            }, "Remove image")
           )
         : h("button", {
             class: "bg-upload-btn",
             onClick: () => fileInputRef.current?.click(),
-          }, "上傳圖片"),
+          }, "Upload image"),
 
       h("input", {
         ref: fileInputRef,

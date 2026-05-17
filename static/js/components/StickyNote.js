@@ -374,10 +374,10 @@ export function StickyNote({
         h("button", {
           class: "sticky-menu-btn",
           onClick: () => setShowMenu(!showMenu),
-          title: "選項",
+          title: "Options",
         }, "⋮"),
         showMenu && h("div", { class: "sticky-menu" },
-          h("div", { class: "sticky-menu-label" }, "背景顏色"),
+          h("div", { class: "sticky-menu-label" }, "Background color"),
           h("div", { class: "sticky-colors" },
             BG_COLORS.map((c) =>
               h("button", {
@@ -388,12 +388,12 @@ export function StickyNote({
               })
             )
           ),
-          h("button", { class: "sticky-action-btn", onClick: toggleOpacity }, opacity >= 0.9 ? "🔲 半透明" : "🔳 不透明"),
-          h("button", { class: "sticky-action-btn", onClick: clearCanvas }, "🧹 清除畫面"),
+          h("button", { class: "sticky-action-btn", onClick: toggleOpacity }, opacity >= 0.9 ? "🔲 Semi-transparent" : "🔳 Opaque"),
+          h("button", { class: "sticky-action-btn", onClick: clearCanvas }, "🧹 Clear canvas"),
           h("button", {
             class: "sticky-delete-btn",
             onClick: () => { setShowMenu(false); onDelete(); },
-          }, "🗑 刪除便利貼")
+          }, "🗑 Delete note")
         )
       )
     ),

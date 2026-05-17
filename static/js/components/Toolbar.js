@@ -81,7 +81,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
   const widthMax    = tool === "pen" ? 12 : tool === "highlighter" ? 40 : 80;
   const widthAction = tool === "pen" ? "SET_PEN_WIDTH"
     : tool === "highlighter" ? "SET_HL_WIDTH" : "SET_ERASER_WIDTH";
-  const widthLabel  = tool === "eraser" ? "大小" : "粗細";
+  const widthLabel  = tool === "eraser" ? "Size" : "Width";
 
   // Size of the color swatch reflects current brush width (8–28px)
   const swatchSize = (() => {
@@ -100,14 +100,14 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
   return h("div", { class: "toolbar" },
 
     // ── Pen ───────────────────────────────────────────────────────────────────
-    h(ToolBtn, { active: tool === "pen", title: "鋼筆 (P)", onClick: () => setTool("pen") },
+    h(ToolBtn, { active: tool === "pen", title: "Pen (P)", onClick: () => setTool("pen") },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
         h("path", { d: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" })
       )
     ),
 
     // ── Highlighter ───────────────────────────────────────────────────────────
-    h(ToolBtn, { active: tool === "highlighter", title: "螢光筆 (H)", onClick: () => setTool("highlighter") },
+    h(ToolBtn, { active: tool === "highlighter", title: "Highlighter (H)", onClick: () => setTool("highlighter") },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
         h("path", { d: "M12 20h9" }),
         h("path", { d: "M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z" }),
@@ -120,7 +120,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
       // Color swatch
       h("button", {
         class: "color-swatch-btn",
-        title: "顏色",
+        title: "Color",
         style: { "--swatch-dot-size": `${swatchSize}px` },
         onClick: (e) => toggleColorPicker(e),
       },
@@ -186,7 +186,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
     h("div", { style: { position: "relative", display: "flex", alignItems: "center", gap: "2px" } },
       h(ToolBtn, {
         active: tool === "eraser",
-        title: "橡皮擦 (E)",
+        title: "Eraser (E)",
         onClick: () => setTool("eraser"),
       },
         h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
@@ -196,20 +196,20 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
       ),
       h("button", {
         class: "eraser-mode-toggle",
-        title: state.eraserMode === "precise" ? "切換: 逐點抹除（精確）" : "切換: 整筆刪除",
+        title: state.eraserMode === "precise" ? "Switch: precise erase" : "Switch: stroke erase",
         onClick: () => {
           const next = state.eraserMode === "precise" ? "stroke" : "precise";
           dispatch({ type: "SET_ERASER_MODE", mode: next });
         },
       },
         state.eraserMode === "precise"
-          ? h("span", { class: "mode-badge precise" }, "精")
-          : h("span", { class: "mode-badge stroke" }, "筆")
+          ? h("span", { class: "mode-badge precise" }, "P")
+          : h("span", { class: "mode-badge stroke" }, "S")
       ),
       // Width button for eraser
       tool === "eraser" && h("button", {
         class: ["width-swatch-btn", showWidthPicker && "active"].filter(Boolean).join(" "),
-        title: "橡皮擦大小",
+        title: "Eraser size",
         style: { marginLeft: "2px" },
         onClick: (e) => toggleWidthPicker(e),
       },
@@ -223,7 +223,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
         class: "width-popover-overlay",
         style: { left: `${widthPickerPos.left}px`, top: `${widthPickerPos.top}px` },
       },
-        h("span", { class: "width-popover-label" }, "大小"),
+        h("span", { class: "width-popover-label" }, "Size"),
         h("div", { class: "width-slider-wrap" },
           h("div", { class: "width-triangle" }),
           h("input", {
@@ -238,7 +238,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
     h(Divider),
 
     // ── Select ────────────────────────────────────────────────────────────────
-    h(ToolBtn, { active: tool === "select", title: "套索選取 (S)", onClick: () => setTool("select") },
+    h(ToolBtn, { active: tool === "select", title: "Lasso Select (S)", onClick: () => setTool("select") },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
         h("path", { d: "M7 3C5 3 3 5 3 7v10c0 2 2 4 4 4h10c2 0 4-2 4-4V7c0-2-2-4-4-4H7z", "stroke-dasharray": "4 2" }),
         h("path", { d: "m9 15 3-3 3 3" }),
@@ -246,7 +246,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
       )
     ),
 
-    h(ToolBtn, { active: tool === "pan", title: "手掌拖動畫布", onClick: () => setTool("pan") },
+    h(ToolBtn, { active: tool === "pan", title: "Pan Canvas", onClick: () => setTool("pan") },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round" },
         h("path", { d: "M7 11V5a1 1 0 0 1 2 0v5" }),
         h("path", { d: "M11 11V4a1 1 0 0 1 2 0v7" }),
@@ -257,7 +257,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
     ),
 
     // ── Sticky ────────────────────────────────────────────────────────────────
-    h(ToolBtn, { active: tool === "sticky", title: "新增便利貼 (N)", onClick: () => {
+    h(ToolBtn, { active: tool === "sticky", title: "Sticky Note (N)", onClick: () => {
       setTool("sticky");
       onAddStickyNote?.();
     }},
@@ -273,7 +273,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
     h(Divider),
     h(ToolBtn, {
       active: tool === "mindmap",
-      title: "心智圖工具",
+      title: "Mind Map",
       onClick: () => setTool("mindmap"),
     },
       h("svg", { viewBox: "0 0 24 24", width: 20, height: 20, fill: "none", stroke: "currentColor", "stroke-width": 2 },
@@ -293,7 +293,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
 
     // ── Undo / Redo ───────────────────────────────────────────────────────────
     h(ToolBtn, {
-      title: "復原 (Ctrl+Z)",
+      title: "Undo (Ctrl+Z)",
       onClick: onUndo,
       active: false,
       danger: false,
@@ -305,7 +305,7 @@ export function Toolbar({ state, dispatch, onAddStickyNote, onUndo, onRedo, page
     ),
 
     h(ToolBtn, {
-      title: "重做 (Ctrl+Y)",
+      title: "Redo (Ctrl+Y)",
       onClick: onRedo,
       active: false,
     },

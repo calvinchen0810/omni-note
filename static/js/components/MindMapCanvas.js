@@ -547,7 +547,7 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
                 },
                 autoFocus: true,
               })
-            : h("span", { class: "mm-node-text" }, node.text || h("em", { style: "opacity:.4;font-size:12px" }, "雙擊編輯")),
+            : h("span", { class: "mm-node-text" }, node.text || h("em", { style: "opacity:.4;font-size:12px" }, "Double-click to edit")),
           // Port circles (show on hover / selected)
           isMindmapTool && ["top", "right", "bottom", "left"].map((prt) =>
             h("div", {
@@ -574,7 +574,7 @@ export function MindMapCanvas({ state, dispatch, onSave, pageWidth, pageHeight }
     // Delete button at midpoint of selected connection
     connDeletePos && h("button", {
       class: "mm-conn-delete-btn",
-      title: "刪除連線 (Del)",
+      title: "Delete connection (Del)",
       style: { position: "absolute", left: `${connDeletePos.x}px`, top: `${connDeletePos.y}px`, transform: "translate(-50%, -50%)", zIndex: 20 },
       onPointerDown: (e) => e.stopPropagation(),
       onClick: () => deleteSelected(),
@@ -621,7 +621,7 @@ function NodeToolbar({ node, onColorChange, onDelete }) {
       })
     ),
     h("div", { style: { width: 1, background: "#e5e7eb", margin: "0 2px" } }),
-    h("button", { class: "mm-delete-btn", title: "刪除 (Del)", onClick: onDelete }, "✕")
+    h("button", { class: "mm-delete-btn", title: "Delete (Del)", onClick: onDelete }, "✕")
   );
 }
 

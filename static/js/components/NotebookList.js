@@ -22,7 +22,7 @@ export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename }
   }
 
   function fmt(dt) {
-    return new Date(dt).toLocaleDateString("zh-TW", {
+    return new Date(dt).toLocaleDateString("en-US", {
       year: "numeric", month: "short", day: "numeric",
     });
   }
@@ -33,31 +33,31 @@ export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename }
       h("button", {
         class: "btn-primary",
         onClick: () => { setCreating(true); setNewTitle(""); },
-      }, "+ 新增筆記本")
+      }, "+ New Notebook")
     ),
 
     creating && h("form", { class: "create-form", onSubmit: submitCreate },
       h("input", {
         type: "text",
         class: "input-field",
-        placeholder: "筆記本名稱",
+        placeholder: "Notebook name",
         value: newTitle,
         autoFocus: true,
         onInput: (e) => setNewTitle(e.target.value),
       }),
       h("div", { class: "form-actions" },
-        h("button", { type: "submit", class: "btn-primary" }, "建立"),
+        h("button", { type: "submit", class: "btn-primary" }, "Create"),
         h("button", {
           type: "button", class: "btn-secondary",
           onClick: () => setCreating(false),
-        }, "取消")
+        }, "Cancel")
       )
     ),
 
     notebooks.length === 0 && !creating
       ? h("div", { class: "empty-state" },
           h("div", { class: "empty-icon" }, "📓"),
-          h("p", null, "尚無筆記本，點擊上方按鈕新增。")
+          h("p", null, "No notebooks yet. Click the button above to create one.")
         )
       : h("div", { class: "notebooks-grid" },
           notebooks.map((nb) =>
@@ -79,7 +79,7 @@ export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename }
                     )
                   : h("h3", { class: "card-title" }, nb.title),
                 h("div", { class: "card-meta" },
-                  h("span", null, `${nb.page_count} 頁`),
+                  h("span", null, `${nb.page_count} ${nb.page_count === 1 ? "page" : "pages"}`),
                   h("span", null, "·"),
                   h("span", null, fmt(nb.updated_at))
                 )
@@ -87,7 +87,7 @@ export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename }
               h("div", { class: "card-actions" },
                 h("button", {
                   class: "icon-btn",
-                  title: "重新命名",
+                  title: "Rename",
                   onClick: (e) => {
                     e.stopPropagation();
                     setEditingId(nb.id);
@@ -96,10 +96,10 @@ export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename }
                 }, "✏️"),
                 h("button", {
                   class: "icon-btn danger",
-                  title: "刪除",
+                  title: "Delete",
                   onClick: (e) => {
                     e.stopPropagation();
-                    if (confirm(`確定刪除「${nb.title}」？`)) onDelete(nb.id);
+                    if (confirm(`Delete "${nb.title}"?`)) onDelete(nb.id);
                   },
                 }, "🗑")
               )

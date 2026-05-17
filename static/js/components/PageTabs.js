@@ -37,8 +37,8 @@ function TabLabel({ page, index, onRename }) {
     });
   }
 
-  const label = page.title || `第 ${index + 1} 頁`;
-  return h("span", { class: "page-tab-label", onDblClick: startEdit, title: "雙擊重新命名" }, label);
+  const label = page.title || `Page ${index + 1}`;
+  return h("span", { class: "page-tab-label", onDblClick: startEdit, title: "Double-click to rename" }, label);
 }
 
 export function PageTabs({ state, dispatch, onAddPage, onDeletePage, onRenamePage }) {
@@ -55,10 +55,10 @@ export function PageTabs({ state, dispatch, onAddPage, onDeletePage, onRenamePag
           state.pages.length > 1 && i === state.currentPageIndex &&
             h("button", {
               class: "tab-delete",
-              title: "刪除此頁",
+              title: "Delete page",
               onClick: (e) => {
                 e.stopPropagation();
-                if (confirm(`確定要刪除第 ${i + 1} 頁？此操作無法復原。`)) {
+                if (confirm(`Delete page ${i + 1}? This cannot be undone.`)) {
                   onDeletePage?.(page.id);
                 }
               },
@@ -70,7 +70,7 @@ export function PageTabs({ state, dispatch, onAddPage, onDeletePage, onRenamePag
     h("div", { class: "page-tabs-add-wrap" },
       h("button", {
         class: "page-tab add-tab",
-        title: "新增頁面",
+        title: "Add page",
         onClick: () => onAddPage?.(),
       }, "+")
     )

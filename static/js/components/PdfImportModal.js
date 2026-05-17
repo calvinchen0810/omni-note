@@ -96,7 +96,7 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
       setPhase("selecting");
     } catch (err) {
       console.error(err);
-      setError("PDF 載入失敗，請確認檔案格式");
+      setError("Failed to load PDF. Please check the file format.");
       setPhase("idle");
     }
   }
@@ -125,7 +125,7 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
       onImported();
     } catch (err) {
       console.error(err);
-      setError("匯入過程中發生錯誤，請稍後再試");
+      setError("An error occurred during import. Please try again.");
       setPhase("selecting");
     }
   }
@@ -138,7 +138,7 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
 
       // Header
       h("div", { class: "cloud-modal-header" },
-        h("span", { class: "cloud-modal-title" }, "匯入 PDF"),
+        h("span", { class: "cloud-modal-title" }, "Import PDF"),
         phase !== "importing" &&
           h("button", { class: "cloud-modal-close", onClick: onClose }, "✕")
       ),
@@ -155,26 +155,26 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
           h("line",     { x1: 12, y1: 18, x2: 12, y2: 12 }),
           h("polyline", { points: "9 15 12 12 15 15" })
         ),
-        h("p",  { class: "pdf-drop-hint" }, "選擇 PDF 檔案以載入縮圖"),
+        h("p",  { class: "pdf-drop-hint" }, "Select a PDF file to load thumbnails"),
         h("button", { class: "pdf-pick-btn", onClick: () => fileInput.current?.click() },
-          "選擇檔案"
+          "Choose file"
         )
       ),
 
       // ── loading: progressive thumbs ──────────────────────────────────────
       phase === "loading" && thumbs.length === 0 && h("div", { class: "pdf-status-center" },
         h("div", { class: "pdf-spinner" }),
-        h("p", null, "載入中…")
+        h("p", null, "Loading…")
       ),
 
       // Thumb grid (shown during loading + selecting)
       (phase === "loading" || phase === "selecting") && thumbs.length > 0 && h("div", { class: "pdf-thumb-section" },
         h("div", { class: "pdf-thumb-bar" },
           phase === "loading"
-            ? h("span", { class: "pdf-thumb-bar-hint" }, `載入縮圖 ${loadedOf.done} / ${loadedOf.total} 頁…`)
-            : h("span", null, `已選 ${selected.size} / ${thumbs.length} 頁`),
+            ? h("span", { class: "pdf-thumb-bar-hint" }, `Loading thumbnails ${loadedOf.done} / ${loadedOf.total}…`)
+            : h("span", null, `${selected.size} / ${thumbs.length} selected`),
           h("button", { class: "pdf-select-all-btn", onClick: toggleAll },
-            allSelected ? "取消全選" : "全選"
+            allSelected ? "Deselect all" : "Select all"
           )
         ),
         h("div", { class: "pdf-thumb-grid" },
@@ -199,7 +199,7 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
       // ── importing: progress bar ──────────────────────────────────────────
       phase === "importing" && h("div", { class: "pdf-progress-wrap" },
         h("div", { class: "pdf-progress-meta" },
-          h("span", null, `正在匯入第 ${progress.done} / ${progress.total} 頁`),
+          h("span", null, `Importing page ${progress.done} / ${progress.total}`),
           h("span", null, `${pct}%`)
         ),
         h("div", { class: "pdf-progress-track" },
@@ -212,12 +212,12 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
 
       // Footer
       phase === "selecting" && h("div", { class: "cloud-modal-footer" },
-        h("button", { class: "cloud-btn-cancel", onClick: onClose }, "取消"),
+        h("button", { class: "cloud-btn-cancel", onClick: onClose }, "Cancel"),
         h("button", {
           class: "cloud-btn-primary",
           disabled: selected.size === 0,
           onClick: handleImport,
-        }, `匯入 ${selected.size} 頁`)
+        }, `Import ${selected.size} ${selected.size === 1 ? "page" : "pages"}`)
       )
     )
   );
