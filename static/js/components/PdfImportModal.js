@@ -8,9 +8,20 @@ const FULL_SCALE  = 2.0;
 let _pdfjs = null;
 async function getPdfJs() {
   if (_pdfjs) return _pdfjs;
-  _pdfjs = await import("https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.mjs");
+  if (window.pdfjsLib) {
+    _pdfjs = window.pdfjsLib;
+    return _pdfjs;
+  }
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  _pdfjs = window.pdfjsLib;
   _pdfjs.GlobalWorkerOptions.workerSrc =
-    "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.mjs";
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   return _pdfjs;
 }
 
