@@ -94,17 +94,14 @@ def make_exam():
         c.setFont("Helvetica-Bold", 11)
         c.setFillColorRGB(0.1, 0.1, 0.1)
         c.drawString(40, y, f"{num} {q}")
-        y -= 16
-        for i, opt in enumerate(opts):
+        y -= 18
+        for opt in opts:
             checkbox(c, 52, y - 2, 9)
             c.setFont("Helvetica", 10.5)
             c.setFillColorRGB(0.2, 0.2, 0.2)
             c.drawString(68, y, opt)
-            if i % 2 == 1:
-                y -= 16
-            else:
-                pass  # two per row handled below
-        y -= 20
+            y -= 16
+        y -= 10
         if y < 200:
             c.showPage()
             y = H - 60
