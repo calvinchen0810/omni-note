@@ -61,6 +61,8 @@ async def init_db():
             "ALTER TABLE pages ADD COLUMN IF NOT EXISTS title TEXT",
             "ALTER TABLE pages ADD COLUMN IF NOT EXISTS background_image_data BYTEA",
             "ALTER TABLE pages ADD COLUMN IF NOT EXISTS background_image_mime VARCHAR(50)",
+            # Auth migrations
+            "ALTER TABLE notebooks ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)",
         ]
         for sql in migrations:
             await conn.execute(text(sql))

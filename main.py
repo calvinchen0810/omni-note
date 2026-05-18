@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from database import init_db, get_db
 from models import Page
-from routers import notebooks, pages, sticky_notes
+from routers import notebooks, pages, sticky_notes, auth as auth_router
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="OmniNote", lifespan=lifespan)
 
+app.include_router(auth_router.router, prefix="/api")
 app.include_router(notebooks.router, prefix="/api")
 app.include_router(pages.router, prefix="/api")
 app.include_router(sticky_notes.router, prefix="/api")

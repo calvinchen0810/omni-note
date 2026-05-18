@@ -1,5 +1,7 @@
 export const initialState = {
-  view: "list",           // "list" | "editor"
+  view: "auth",           // "auth" | "list" | "editor"
+  authView: "login",      // "login" | "register" | "forgot" | "reset"
+  user: null,
   notebook: null,
   pages: [],
   currentPageIndex: 0,
@@ -63,10 +65,20 @@ function patchCurrentPage(state, patch) {
 export function reducer(state, action) {
   switch (action.type) {
 
+    case "SET_USER":
+      return { ...state, user: action.user, view: "list" };
+
+    case "LOGOUT":
+      return { ...initialState, view: "auth", authView: "login", user: null };
+
+    case "SET_AUTH_VIEW":
+      return { ...state, authView: action.authView, view: "auth" };
+
     case "OPEN_EDITOR":
       return {
         ...initialState,
         view: "editor",
+        user: state.user,
         notebook: action.notebook,
         pages: action.pages,
       };

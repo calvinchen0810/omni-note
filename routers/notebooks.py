@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from datetime import datetime
 
 from database import get_db, DATA_DIR
-from models import Notebook, Page
+from models import Notebook, Page, User
+from auth import get_current_user
 
 BACKGROUNDS_DIR = DATA_DIR / "backgrounds"
 
@@ -28,24 +29,30 @@ class NotebookOut(BaseModel):
     updated_at: datetime
     page_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
+
+
+def _check_owner(nb: Notebook, user: User):
+    if nb.user_id is not None and nb.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
 
 @router.get("/notebooks", response_model=list[NotebookOut])
-async def list_notebooks(db: AsyncSession = Depends(get_db)):
+async def list_notebooks(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     result = await db.execute(
         select(Notebook)
         .options(selectinload(Notebook.pages))
+        .where(or_(Notebook.user_id == current_user.id, Notebook.user_id.is_(None)))
         .order_by(Notebook.updated_at.desc())
     )
     notebooks = result.scalars().all()
     return [
         NotebookOut(
-            id=nb.id,
-            title=nb.title,
-            created_at=nb.created_at,
-            updated_at=nb.updated_at,
+            id=nb.id, title=nb.title,
+            created_at=nb.created_at, updated_at=nb.updated_at,
             page_count=len(nb.pages),
         )
         for nb in notebooks
@@ -53,8 +60,12 @@ async def list_notebooks(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/notebooks", response_model=NotebookOut)
-async def create_notebook(body: NotebookCreate, db: AsyncSession = Depends(get_db)):
-    nb = Notebook(title=body.title)
+async def create_notebook(
+    body: NotebookCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    nb = Notebook(title=body.title, user_id=current_user.id)
     db.add(nb)
     await db.flush()
     page = Page(notebook_id=nb.id, page_index=0)
@@ -62,67 +73,70 @@ async def create_notebook(body: NotebookCreate, db: AsyncSession = Depends(get_d
     await db.commit()
     await db.refresh(nb)
     return NotebookOut(
-        id=nb.id,
-        title=nb.title,
-        created_at=nb.created_at,
-        updated_at=nb.updated_at,
+        id=nb.id, title=nb.title,
+        created_at=nb.created_at, updated_at=nb.updated_at,
         page_count=1,
     )
 
 
 @router.get("/notebooks/{notebook_id}", response_model=NotebookOut)
-async def get_notebook(notebook_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Notebook)
-        .options(selectinload(Notebook.pages))
-        .where(Notebook.id == notebook_id)
-    )
-    nb = result.scalar_one_or_none()
-    if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
-    return NotebookOut(
-        id=nb.id,
-        title=nb.title,
-        created_at=nb.created_at,
-        updated_at=nb.updated_at,
-        page_count=len(nb.pages),
-    )
-
-
-@router.put("/notebooks/{notebook_id}", response_model=NotebookOut)
-async def update_notebook(
-    notebook_id: int, body: NotebookUpdate, db: AsyncSession = Depends(get_db)
+async def get_notebook(
+    notebook_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(Notebook)
-        .options(selectinload(Notebook.pages))
-        .where(Notebook.id == notebook_id)
-    )
-    nb = result.scalar_one_or_none()
-    if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
-    nb.title = body.title
-    nb.updated_at = datetime.utcnow()
-    await db.commit()
-    await db.refresh(nb)
-    return NotebookOut(
-        id=nb.id,
-        title=nb.title,
-        created_at=nb.created_at,
-        updated_at=nb.updated_at,
-        page_count=len(nb.pages),
-    )
-
-
-@router.delete("/notebooks/{notebook_id}")
-async def delete_notebook(notebook_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Notebook).options(selectinload(Notebook.pages)).where(Notebook.id == notebook_id)
     )
     nb = result.scalar_one_or_none()
     if not nb:
         raise HTTPException(status_code=404, detail="Notebook not found")
-    # Clean up background image files for all pages
+    _check_owner(nb, current_user)
+    return NotebookOut(
+        id=nb.id, title=nb.title,
+        created_at=nb.created_at, updated_at=nb.updated_at,
+        page_count=len(nb.pages),
+    )
+
+
+@router.put("/notebooks/{notebook_id}", response_model=NotebookOut)
+async def update_notebook(
+    notebook_id: int,
+    body: NotebookUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Notebook).options(selectinload(Notebook.pages)).where(Notebook.id == notebook_id)
+    )
+    nb = result.scalar_one_or_none()
+    if not nb:
+        raise HTTPException(status_code=404, detail="Notebook not found")
+    _check_owner(nb, current_user)
+    nb.title = body.title
+    nb.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(nb)
+    return NotebookOut(
+        id=nb.id, title=nb.title,
+        created_at=nb.created_at, updated_at=nb.updated_at,
+        page_count=len(nb.pages),
+    )
+
+
+@router.delete("/notebooks/{notebook_id}")
+async def delete_notebook(
+    notebook_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Notebook).options(selectinload(Notebook.pages)).where(Notebook.id == notebook_id)
+    )
+    nb = result.scalar_one_or_none()
+    if not nb:
+        raise HTTPException(status_code=404, detail="Notebook not found")
+    _check_owner(nb, current_user)
     for page in nb.pages:
         bg_file = BACKGROUNDS_DIR / str(page.id)
         if bg_file.exists():

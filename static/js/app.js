@@ -2,7 +2,7 @@ import { h, render } from "https://esm.sh/preact@10.19.3";
 import { useReducer, useEffect, useCallback, useRef, useState } from "https://esm.sh/preact@10.19.3/hooks";
 
 import { initialState, reducer } from "./store.js";
-import { api } from "./api.js";
+import { api, auth, setUnauthorizedHandler } from "./api.js";
 import { uid, renderAllStrokes, drawPageBackground } from "./canvas-utils.js";
 
 import { NotebookList }    from "./components/NotebookList.js";
@@ -11,6 +11,7 @@ import { Toolbar }         from "./components/Toolbar.js";
 import { PageTabs }        from "./components/PageTabs.js";
 import { StickyNote }      from "./components/StickyNote.js";
 import { PdfImportModal }  from "./components/PdfImportModal.js";
+import { AuthPage }        from "./components/AuthPage.js";
 import { exportCurrentPageAsPng, exportAllPagesAsPdf } from "./export-utils.js";
 
 const PAGE_WIDTH = 1200;
@@ -58,9 +59,39 @@ function App() {
     });
   }, [state.view]);
 
+  // ── Auth init ─────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => dispatch({ type: "LOGOUT" }));
+
+    const token = auth.getToken();
+    if (!token) return; // stay on auth view
+
+    api.getMe()
+      .then((user) => {
+        dispatch({ type: "SET_USER", user });
+        loadNotebooks();
+      })
+      .catch(() => {
+        auth.clearToken();
+        dispatch({ type: "LOGOUT" });
+      });
+  }, []);
+
+  function handleLogin(user) {
+    dispatch({ type: "SET_USER", user });
+    loadNotebooks();
+  }
+
+  function handleLogout() {
+    auth.clearToken();
+    dispatch({ type: "LOGOUT" });
+  }
+
   // ── Load notebooks on mount ───────────────────────────────────────────────
 
-  useEffect(() => { loadNotebooks(); }, []);
+  // (called after login, not on raw mount anymore)
+  useEffect(() => {}, []);
 
   async function loadNotebooks() {
     try {
@@ -355,6 +386,14 @@ function App() {
   }
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  if (state.view === "auth") {
+    return h(AuthPage, {
+      authView: state.authView,
+      onSetView: (v) => dispatch({ type: "SET_AUTH_VIEW", authView: v }),
+      onLogin: handleLogin,
+    });
+  }
+
   if (state.view === "list") {
     return h("div", { class: "app" },
       h(NotebookList, {
@@ -363,6 +402,8 @@ function App() {
         onCreate: handleCreateNotebook,
         onDelete: handleDeleteNotebook,
         onRename: handleRenameNotebook,
+        user: state.user,
+        onLogout: handleLogout,
       })
     );
   }
