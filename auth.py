@@ -4,43 +4,43 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
+from itsdangerous import TimestampSigner, SignatureExpired, BadSignature
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
 
 SECRET_KEY = os.getenv("SECRET_KEY", "omni-note-dev-secret-please-change-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 30
+ACCESS_TOKEN_MAX_AGE = 30 * 24 * 3600   # 30 days in seconds
 RESET_TOKEN_EXPIRE_HOURS = 1
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_signer = TimestampSigner(SECRET_KEY)
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return bcrypt.checkpw(plain.encode(), hashed.encode())
+    except Exception:
+        return False
 
 
 def create_access_token(user_id: int) -> str:
-    expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
-    return jwt.encode({"sub": str(user_id), "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+    return _signer.sign(str(user_id)).decode()
 
 
 def decode_access_token(token: str) -> Optional[int]:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        sub = payload.get("sub")
-        return int(sub) if sub else None
-    except (JWTError, ValueError):
+        val = _signer.unsign(token, max_age=ACCESS_TOKEN_MAX_AGE)
+        return int(val)
+    except (SignatureExpired, BadSignature, ValueError):
         return None
 
 
