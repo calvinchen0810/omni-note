@@ -7,7 +7,7 @@ from datetime import datetime
 
 from database import get_db, DATA_DIR
 from models import Notebook, Page, User
-from auth import get_current_user
+from auth import get_current_user, get_optional_user
 
 BACKGROUNDS_DIR = DATA_DIR / "backgrounds"
 
@@ -40,12 +40,17 @@ def _check_owner(nb: Notebook, user: User):
 @router.get("/notebooks", response_model=list[NotebookOut])
 async def list_notebooks(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_optional_user),
 ):
+    if current_user:
+        condition = or_(Notebook.user_id == current_user.id, Notebook.user_id.is_(None))
+    else:
+        condition = Notebook.user_id.is_(None)
+
     result = await db.execute(
         select(Notebook)
         .options(selectinload(Notebook.pages))
-        .where(or_(Notebook.user_id == current_user.id, Notebook.user_id.is_(None)))
+        .where(condition)
         .order_by(Notebook.updated_at.desc())
     )
     notebooks = result.scalars().all()
@@ -63,9 +68,9 @@ async def list_notebooks(
 async def create_notebook(
     body: NotebookCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_optional_user),
 ):
-    nb = Notebook(title=body.title, user_id=current_user.id)
+    nb = Notebook(title=body.title, user_id=current_user.id if current_user else None)
     db.add(nb)
     await db.flush()
     page = Page(notebook_id=nb.id, page_index=0)
@@ -83,7 +88,7 @@ async def create_notebook(
 async def get_notebook(
     notebook_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_optional_user),
 ):
     result = await db.execute(
         select(Notebook).options(selectinload(Notebook.pages)).where(Notebook.id == notebook_id)
@@ -91,7 +96,8 @@ async def get_notebook(
     nb = result.scalar_one_or_none()
     if not nb:
         raise HTTPException(status_code=404, detail="Notebook not found")
-    _check_owner(nb, current_user)
+    if current_user:
+        _check_owner(nb, current_user)
     return NotebookOut(
         id=nb.id, title=nb.title,
         created_at=nb.created_at, updated_at=nb.updated_at,
@@ -104,7 +110,7 @@ async def update_notebook(
     notebook_id: int,
     body: NotebookUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_optional_user),
 ):
     result = await db.execute(
         select(Notebook).options(selectinload(Notebook.pages)).where(Notebook.id == notebook_id)
@@ -112,7 +118,8 @@ async def update_notebook(
     nb = result.scalar_one_or_none()
     if not nb:
         raise HTTPException(status_code=404, detail="Notebook not found")
-    _check_owner(nb, current_user)
+    if current_user:
+        _check_owner(nb, current_user)
     nb.title = body.title
     nb.updated_at = datetime.utcnow()
     await db.commit()
@@ -128,7 +135,7 @@ async def update_notebook(
 async def delete_notebook(
     notebook_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_optional_user),
 ):
     result = await db.execute(
         select(Notebook).options(selectinload(Notebook.pages)).where(Notebook.id == notebook_id)
@@ -136,7 +143,8 @@ async def delete_notebook(
     nb = result.scalar_one_or_none()
     if not nb:
         raise HTTPException(status_code=404, detail="Notebook not found")
-    _check_owner(nb, current_user)
+    if current_user:
+        _check_owner(nb, current_user)
     for page in nb.pages:
         bg_file = BACKGROUNDS_DIR / str(page.id)
         if bg_file.exists():

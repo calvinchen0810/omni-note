@@ -83,6 +83,11 @@ function App() {
     loadNotebooks();
   }
 
+  function handleGuest() {
+    dispatch({ type: "SET_USER", user: { id: null, username: "Guest" } });
+    loadNotebooks();
+  }
+
   function handleLogout() {
     auth.clearToken();
     dispatch({ type: "LOGOUT" });
@@ -391,6 +396,7 @@ function App() {
       authView: state.authView,
       onSetView: (v) => dispatch({ type: "SET_AUTH_VIEW", authView: v }),
       onLogin: handleLogin,
+      onGuest: handleGuest,
     });
   }
 

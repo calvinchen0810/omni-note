@@ -70,3 +70,18 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns the current user, or None for unauthenticated (guest) requests."""
+    from models import User
+    if not credentials:
+        return None
+    user_id = decode_access_token(credentials.credentials)
+    if not user_id:
+        return None
+    result = await db.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()

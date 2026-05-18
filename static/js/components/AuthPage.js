@@ -25,7 +25,15 @@ function OkMsg({ msg }) {
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 
-function LoginForm({ onSuccess, onGoRegister, onGoForgot }) {
+function GuestDivider() {
+  return h("div", { class: "auth-divider" },
+    h("span", { class: "auth-divider-line" }),
+    h("span", { class: "auth-divider-text" }, "or"),
+    h("span", { class: "auth-divider-line" }),
+  );
+}
+
+function LoginForm({ onSuccess, onGoRegister, onGoForgot, onGuest }) {
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
@@ -57,7 +65,15 @@ function LoginForm({ onSuccess, onGoRegister, onGoForgot }) {
       h("button", { class: "auth-link", type: "button", onClick: onGoForgot }, "Forgot password?"),
       h("span", { class: "auth-link-sep" }, "·"),
       h("button", { class: "auth-link", type: "button", onClick: onGoRegister }, "Create account"),
-    )
+    ),
+    GuestDivider(),
+    h("button", { class: "auth-btn-guest", type: "button", onClick: onGuest },
+      h("svg", { viewBox: "0 0 24 24", width: 16, height: 16, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+        h("path", { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }),
+        h("circle", { cx: 12, cy: 7, r: 4 })
+      ),
+      "Continue as Guest"
+    ),
   );
 }
 
@@ -195,7 +211,7 @@ function ResetForm({ prefillToken, onGoLogin }) {
 
 // ── AuthPage root ─────────────────────────────────────────────────────────────
 
-export function AuthPage({ authView, onSetView, onLogin }) {
+export function AuthPage({ authView, onSetView, onLogin, onGuest }) {
   const [resetToken, setResetToken] = useState(null);
 
   function handleTokenReady(token) {
@@ -213,7 +229,7 @@ export function AuthPage({ authView, onSetView, onLogin }) {
         h("span", { class: "auth-logo-name" }, "OmniNote")
       ),
 
-      authView === "login"    && h(LoginForm,    { onSuccess: onLogin, onGoRegister: () => onSetView("register"), onGoForgot: () => onSetView("forgot") }),
+      authView === "login"    && h(LoginForm,    { onSuccess: onLogin, onGoRegister: () => onSetView("register"), onGoForgot: () => onSetView("forgot"), onGuest }),
       authView === "register" && h(RegisterForm, { onSuccess: onLogin, onGoLogin: () => onSetView("login") }),
       authView === "forgot"   && h(ForgotForm,   { onGoLogin: () => onSetView("login"), onTokenReady: handleTokenReady }),
       authView === "reset"    && h(ResetForm,    { prefillToken: resetToken, onGoLogin: () => onSetView("login") }),
