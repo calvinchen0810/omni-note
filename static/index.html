@@ -81,25 +81,42 @@
       padding: 9px 12px; font-size: 13px;
     }
 
-    /* ── List header ── */
-    .list-header {
+    /* ── Top bar (notebook list) ── */
+    .list-topbar {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 28px;
+      background: #1a1a2e; padding: 0 20px; height: 54px;
+      position: sticky; top: 0; z-index: 10;
+      margin: -24px -24px 24px;        /* bleed to edges of notebook-list padding */
     }
-    .list-header-actions { display: flex; align-items: center; gap: 10px; }
-    .list-user-badge {
-      font-size: 13px; font-weight: 600; color: #374151;
-      background: #f3f4f6; border-radius: 999px; padding: 4px 12px;
+    .list-topbar-brand {
+      display: flex; align-items: center; gap: 9px;
+      flex-shrink: 0;
     }
-    .btn-logout {
-      display: flex; align-items: center; gap: 6px;
-      background: #f3f4f6; color: #6b7280;
-      border-radius: 9px; padding: 7px 12px;
-      font-size: 13px; font-weight: 600;
-      transition: background .15s;
+    .list-topbar-name {
+      font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.3px;
     }
-    .btn-logout:hover { background: #fee2e2; color: #b91c1c; }
-    .app-title { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+    .list-topbar-right { display: flex; align-items: center; gap: 10px; }
+    .list-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #2563eb; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .list-signout-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 8px;
+      color: rgba(255,255,255,.65);
+      transition: background .15s, color .15s;
+    }
+    .list-signout-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+    /* ── List body ── */
+    .list-body { display: flex; flex-direction: column; gap: 16px; }
+    .list-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .list-section-title { font-size: 16px; font-weight: 700; color: #374151; }
     .btn-primary {
       background: #4f8ef7; color: #fff; border-radius: 10px;
       padding: 9px 18px; font-size: 14px; font-weight: 600;
