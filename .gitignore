@@ -10,3 +10,6 @@ __pycache__/
 venv/
 data/
 dist/
+assets_for_video/
+generate_assets.py
+omni-note-video-assets.zip
