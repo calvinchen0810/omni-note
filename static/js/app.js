@@ -498,13 +498,19 @@ function App() {
 function ZoomMenu({ zoom, onZoom, viewport }) {
   const [open, setOpen] = useState(false);
 
-  function fitZoom() {
+  function fitWidth() {
     const vp = viewport?.current;
     if (!vp) return onZoom(1);
-    const pad = 56;
+    const fit = (vp.clientWidth - 56) / PAGE_WIDTH;
+    onZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fit)));
+  }
+
+  function fitPage() {
+    const vp = viewport?.current;
+    if (!vp) return onZoom(1);
     const fit = Math.min(
-      (vp.clientWidth  - pad) / PAGE_WIDTH,
-      (vp.clientHeight - pad) / PAGE_HEIGHT,
+      (vp.clientWidth  - 56) / PAGE_WIDTH,
+      (vp.clientHeight - 56) / PAGE_HEIGHT,
     );
     onZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fit)));
   }
@@ -531,8 +537,12 @@ function ZoomMenu({ zoom, onZoom, viewport }) {
         h("span", { class: "zoom-slider-value" }, `${Math.round(zoom * 100)}%`),
         h("button", {
           class: "zoom-reset",
-          onClick: fitZoom,
-        }, "Fit")
+          onClick: fitWidth,
+        }, "Fit Width"),
+        h("button", {
+          class: "zoom-reset",
+          onClick: fitPage,
+        }, "Fit Page")
       ),
       h("input", {
         class: "zoom-slider",
