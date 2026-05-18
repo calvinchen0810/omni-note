@@ -271,12 +271,15 @@ function App() {
 
   // ── PDF import ────────────────────────────────────────────────────────────
 
-  async function handlePdfImported() {
-    const prevCount = state.pages.length;
+  async function handlePdfImported(replacedFirst) {
+    const prevCount      = state.pages.length;
+    const currentIdx     = state.currentPageIndex;
     setShowPdfImport(false);
     try {
       const pages = await api.listPages(state.notebook.id);
-      dispatch({ type: "SET_PAGES", pages, startIndex: prevCount });
+      // If the blank current page was replaced, stay on it; otherwise jump to first new page.
+      const startIndex = replacedFirst ? currentIdx : prevCount;
+      dispatch({ type: "SET_PAGES", pages, startIndex });
     } catch (e) {
       console.error("reload pages after pdf import:", e);
     }
@@ -489,6 +492,7 @@ function App() {
 
     showPdfImport && h(PdfImportModal, {
       notebookId: state.notebook?.id,
+      currentPage,
       onClose: () => setShowPdfImport(false),
       onImported: handlePdfImported,
     }),

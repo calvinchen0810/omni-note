@@ -45,7 +45,16 @@ async function pageToBlob(pdfPage) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function PdfImportModal({ notebookId, onClose, onImported }) {
+function isPageBlank(page) {
+  if (!page) return false;
+  const hasStrokes      = (page.strokes ?? []).length > 0;
+  const hasStickyNotes  = (page.sticky_notes ?? []).length > 0;
+  const hasMindmapNodes = (page.mindmap?.nodes ?? []).length > 0;
+  const hasImageBg      = page.background?.type === "image";
+  return !hasStrokes && !hasStickyNotes && !hasMindmapNodes && !hasImageBg;
+}
+
+export function PdfImportModal({ notebookId, currentPage, onClose, onImported }) {
   const [thumbs,   setThumbs]   = useState([]);          // [{ n, url }]
   const [selected, setSelected] = useState(new Set());
   const [phase,    setPhase]    = useState("idle");      // idle | loading | selecting | importing
@@ -105,7 +114,8 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
     const pdf = pdfDoc.current;
     if (!pdf || selected.size === 0) return;
 
-    const pageNums = [...selected].sort((a, b) => a - b);
+    const pageNums    = [...selected].sort((a, b) => a - b);
+    const replaceFirst = isPageBlank(currentPage);
     setPhase("importing");
     setProgress({ done: 0, total: pageNums.length });
     setError("");
@@ -117,12 +127,17 @@ export function PdfImportModal({ notebookId, onClose, onImported }) {
         const blob    = await pageToBlob(pdfPage);
         const file    = new File([blob], `p${n}.png`, { type: "image/png" });
 
-        const newPage = await api.createPage(notebookId, { type: "blank" }, "handwriting");
-        await api.uploadBackgroundImage(newPage.id, file);
+        if (i === 0 && replaceFirst) {
+          // Re-use the existing blank page instead of creating a new one
+          await api.uploadBackgroundImage(currentPage.id, file);
+        } else {
+          const newPage = await api.createPage(notebookId, { type: "blank" }, "handwriting");
+          await api.uploadBackgroundImage(newPage.id, file);
+        }
 
         setProgress({ done: i + 1, total: pageNums.length });
       }
-      onImported();
+      onImported(replaceFirst);
     } catch (err) {
       console.error(err);
       setError("An error occurred during import. Please try again.");
