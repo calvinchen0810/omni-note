@@ -50,10 +50,15 @@ function OriginsSection({ origins, onSave }) {
 
   async function save() {
     setSaving(true);
-    await onSave(items);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await onSave(items);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error("Failed to save origins:", e);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return h("div", { class: "ws-section" },
