@@ -125,10 +125,11 @@ manager = ConnectionManager()
 
 # ── Router ────────────────────────────────────────────────────────────────────
 
-router = APIRouter()
+router = APIRouter()       # admin REST under /api/ws/*
+ws_router = APIRouter()    # WebSocket at /ws
 
 
-@router.websocket("/ws")
+@ws_router.websocket("/ws")
 async def ws_endpoint(
     websocket: WebSocket,
     room: str = Query(..., min_length=4, max_length=128),
@@ -189,12 +190,12 @@ async def ws_endpoint(
 
 # ── Admin API ─────────────────────────────────────────────────────────────────
 
-@router.get("/ws/status")
+@router.get("/status")
 async def ws_status(current_user=Depends(get_current_user)):
     return manager.status()
 
 
-@router.get("/ws/config")
+@router.get("/config")
 async def ws_config(current_user=Depends(get_current_user)):
     return _load_config()
 
@@ -203,7 +204,7 @@ class WsConfigUpdate(BaseModel):
     allowed_origins: list[str]
 
 
-@router.put("/ws/config")
+@router.put("/config")
 async def ws_config_update(body: WsConfigUpdate, current_user=Depends(get_current_user)):
     cfg = {"allowed_origins": [o.rstrip("/") for o in body.allowed_origins if o.strip()]}
     _save_config(cfg)

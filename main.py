@@ -26,7 +26,8 @@ app.include_router(auth_router.router, prefix="/api")
 app.include_router(notebooks.router, prefix="/api")
 app.include_router(pages.router, prefix="/api")
 app.include_router(sticky_notes.router, prefix="/api")
-app.include_router(ws_relay.router)  # /ws (WebSocket) + /api/ws/* (admin)
+app.include_router(ws_relay.ws_router)            # WebSocket at /ws
+app.include_router(ws_relay.router, prefix="/api/ws")  # admin at /api/ws/*
 
 @app.get("/backgrounds/{page_id}")
 async def get_background_image(page_id: int, db: AsyncSession = Depends(get_db)):
