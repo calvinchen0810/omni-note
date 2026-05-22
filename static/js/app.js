@@ -403,7 +403,7 @@ function App() {
 
   if (state.view === "ws-admin") {
     return h(WsAdminPage, {
-      onBack: () => dispatch({ type: "BACK_TO_LIST" }),
+      onBack: () => dispatch({ type: "SET_VIEW", view: "list" }),
     });
   }
 
@@ -417,7 +417,7 @@ function App() {
         onRename:    handleRenameNotebook,
         user:        state.user,
         onLogout:    handleLogout,
-        onWsAdmin:   state.user?.id ? () => dispatch({ type: "BACK_TO_LIST", next: "ws-admin" }) : null,
+        onWsAdmin:   state.user?.id ? () => dispatch({ type: "SET_VIEW", view: "ws-admin" }) : null,
       })
     );
   }

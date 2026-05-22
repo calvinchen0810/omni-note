@@ -83,8 +83,11 @@ export function reducer(state, action) {
         pages: action.pages,
       };
 
+    case "SET_VIEW":
+      return { ...state, view: action.view };
+
     case "BACK_TO_LIST":
-      return { ...state, view: action.next ?? "list", notebook: null, pages: [] };
+      return { ...state, view: "list", notebook: null, pages: [] };
 
     case "UPDATE_NOTEBOOK_TITLE":
       return { ...state, notebook: { ...state.notebook, title: action.title } };
