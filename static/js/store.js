@@ -1,5 +1,5 @@
 export const initialState = {
-  view: "auth",           // "auth" | "list" | "editor"
+  view: "auth",           // "auth" | "list" | "editor" | "ws-admin"
   authView: "login",      // "login" | "register" | "forgot" | "reset"
   user: null,
   notebook: null,
@@ -84,7 +84,7 @@ export function reducer(state, action) {
       };
 
     case "BACK_TO_LIST":
-      return { ...state, view: "list", notebook: null, pages: [] };
+      return { ...state, view: action.next ?? "list", notebook: null, pages: [] };
 
     case "UPDATE_NOTEBOOK_TITLE":
       return { ...state, notebook: { ...state.notebook, title: action.title } };

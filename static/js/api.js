@@ -78,4 +78,9 @@ export const api = {
   createStickyNote: (pageId, data) => req("POST", `/pages/${pageId}/sticky-notes`, data),
   updateStickyNote: (id, data)     => req("PUT",  `/sticky-notes/${id}`, data),
   deleteStickyNote: (id)           => req("DELETE", `/sticky-notes/${id}`),
+
+  // WebSocket admin
+  wsStatus:       ()     => req("GET", "/ws/status"),
+  wsConfig:       ()     => req("GET", "/ws/config"),
+  wsConfigUpdate: (list) => req("PUT", "/ws/config", { allowed_origins: list }),
 };

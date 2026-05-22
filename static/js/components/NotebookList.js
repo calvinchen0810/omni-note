@@ -1,7 +1,7 @@
 import { h } from "https://esm.sh/preact@10.19.3";
 import { useState } from "https://esm.sh/preact@10.19.3/hooks";
 
-export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename, user, onLogout }) {
+export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename, user, onLogout, onWsAdmin }) {
   const [creating,  setCreating]  = useState(false);
   const [newTitle,  setNewTitle]  = useState("");
   const [editingId, setEditingId] = useState(null);
@@ -40,6 +40,17 @@ export function NotebookList({ notebooks, onOpen, onCreate, onDelete, onRename, 
       h("div", { class: "list-topbar-right" },
         user && h("div", { class: "list-avatar", title: user.username },
           user.username.charAt(0).toUpperCase()
+        ),
+        onWsAdmin && h("button", {
+          class: "list-signout-btn",
+          onClick: onWsAdmin,
+          title: "WebSocket Manager",
+        },
+          h("svg", { viewBox: "0 0 24 24", width: 18, height: 18, fill: "none", stroke: "currentColor", "stroke-width": 2 },
+            h("path", { d: "M18 20V10" }),
+            h("path", { d: "M12 20V4" }),
+            h("path", { d: "M6 20v-6" })
+          )
         ),
         onLogout && h("button", {
           class: "list-signout-btn",

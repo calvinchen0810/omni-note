@@ -12,6 +12,7 @@ import { PageTabs }        from "./components/PageTabs.js";
 import { StickyNote }      from "./components/StickyNote.js";
 import { PdfImportModal }  from "./components/PdfImportModal.js";
 import { AuthPage }        from "./components/AuthPage.js";
+import { WsAdminPage }    from "./components/WsAdminPage.js";
 import { exportCurrentPageAsPng, exportAllPagesAsPdf } from "./export-utils.js";
 
 const PAGE_WIDTH = 1200;
@@ -400,16 +401,23 @@ function App() {
     });
   }
 
+  if (state.view === "ws-admin") {
+    return h(WsAdminPage, {
+      onBack: () => dispatch({ type: "BACK_TO_LIST" }),
+    });
+  }
+
   if (state.view === "list") {
     return h("div", { class: "app" },
       h(NotebookList, {
         notebooks,
-        onOpen:   handleOpenNotebook,
-        onCreate: handleCreateNotebook,
-        onDelete: handleDeleteNotebook,
-        onRename: handleRenameNotebook,
-        user: state.user,
-        onLogout: handleLogout,
+        onOpen:      handleOpenNotebook,
+        onCreate:    handleCreateNotebook,
+        onDelete:    handleDeleteNotebook,
+        onRename:    handleRenameNotebook,
+        user:        state.user,
+        onLogout:    handleLogout,
+        onWsAdmin:   state.user?.id ? () => dispatch({ type: "BACK_TO_LIST", next: "ws-admin" }) : null,
       })
     );
   }
