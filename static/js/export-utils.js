@@ -29,7 +29,7 @@ async function renderPageToOffscreen(page, width, height, withBg = true, fallbac
     const bg = page.background ?? { type: "blank" };
     let bgImage = null;
     if (bg.type === "image") {
-      bgImage = await loadBgImage(`/backgrounds/${page.id}?t=${bg.ts ?? 0}`);
+      bgImage = await loadBgImage(new URL(`backgrounds/${page.id}?t=${bg.ts ?? 0}`, window.location.href).href);
     }
     drawPageBackground(ctx, width, height, bg, bgImage);
   } else if (fallbackWhite) {

@@ -73,7 +73,7 @@ export function Canvas({ state, dispatch, onSave, pageWidth, pageHeight }) {
     const img = new Image();
     img.onload = () => { bgImageRef.current = img; redrawBase(); };
     img.onerror = () => { bgImageRef.current = null; redrawBase(); };
-    img.src = `/backgrounds/${page.id}?t=${bg.ts ?? 0}`;
+    img.src = new URL(`backgrounds/${page.id}?t=${bg.ts ?? 0}`, window.location.href).href;
   }, [bgKey, state.currentPageIndex]);
 
   // ── Redraw base canvas ────────────────────────────────────────────────────
