@@ -1,4 +1,4 @@
-const CACHE = "omni-note-v3";
+const CACHE = "omni-note-v4";
 
 const PRECACHE_RELATIVE = [
   "",
@@ -38,8 +38,8 @@ self.addEventListener("fetch", (e) => {
     : url.pathname.replace(/^\//, "");
   const normalizedPath = relativePath.replace(/^\//, "");
 
-  // Always pass API requests to network
-  if (normalizedPath.startsWith("api/")) {
+  // Always pass API requests and dynamic image data to network
+  if (normalizedPath.startsWith("api/") || normalizedPath.startsWith("backgrounds/")) {
     e.respondWith(fetch(e.request));
     return;
   }

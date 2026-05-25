@@ -59,6 +59,10 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
         if _is_sqlite:
+            # WAL mode: allows concurrent reads while writing; writes visible immediately
+            await conn.execute(text("PRAGMA journal_mode=WAL"))
+            await conn.execute(text("PRAGMA synchronous=NORMAL"))
+
             # SQLite: create_all already reflects the current model definition.
             # Run lightweight idempotent migrations for any pre-existing DB files.
             sqlite_migrations = [
