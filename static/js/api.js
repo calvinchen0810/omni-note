@@ -31,6 +31,20 @@ async function req(method, path, body) {
   return res.json();
 }
 
+// ── WebSocket admin fetch (URL derived from current page location) ────────────
+
+async function wsAdminReq(method, sub, body) {
+  const token = auth.getToken();
+  const url = new URL(`api/ws/${sub}`, window.location.href);
+  const opts = { method, headers: { "Content-Type": "application/json" } };
+  if (token) opts.headers["Authorization"] = `Bearer ${token}`;
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  if (res.status === 401) { auth.clearToken(); onUnauthorized?.(); throw new Error("Unauthorized"); }
+  if (!res.ok) throw new Error(`${method} ws/${sub} → ${res.status}`);
+  return res.json();
+}
+
 // ── API methods ───────────────────────────────────────────────────────────────
 
 export const api = {
@@ -79,8 +93,8 @@ export const api = {
   updateStickyNote: (id, data)     => req("PUT",  `/sticky-notes/${id}`, data),
   deleteStickyNote: (id)           => req("DELETE", `/sticky-notes/${id}`),
 
-  // WebSocket admin
-  wsStatus:       ()     => req("GET", "/ws/status"),
-  wsConfig:       ()     => req("GET", "/ws/config"),
-  wsConfigUpdate: (list) => req("PUT", "/ws/config", { allowed_origins: list }),
+  // WebSocket admin (URL derived via new URL(..., window.location.href))
+  wsStatus:       ()     => wsAdminReq("GET",  "status"),
+  wsConfig:       ()     => wsAdminReq("GET",  "config"),
+  wsConfigUpdate: (list) => wsAdminReq("PUT",  "config", { allowed_origins: list }),
 };
